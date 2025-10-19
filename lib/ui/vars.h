@@ -1,0 +1,40 @@
+#ifndef EEZ_LVGL_UI_VARS_H
+#define EEZ_LVGL_UI_VARS_H
+
+#include <stdint.h>
+#include <stdbool.h>
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+// enum declarations
+
+
+
+// Flow global variables
+
+enum FlowGlobalVariables {
+    FLOW_GLOBAL_VARIABLE_IS_WI_FI_AP = 0,
+    FLOW_GLOBAL_VARIABLE_IS_HEADER = 1,
+    FLOW_GLOBAL_VARIABLE_IS_BACKGOROUND = 2,
+    FLOW_GLOBAL_VARIABLE_SELECTED = 3,
+    FLOW_GLOBAL_VARIABLE_BACKGROUND_SELECTED = 4,
+    FLOW_GLOBAL_VARIABLE_HH_MM = 5,
+    FLOW_GLOBAL_VARIABLE_CURRENT_DATE = 6,
+    FLOW_GLOBAL_VARIABLE_NOTIF_WI_FI = 7,
+    FLOW_GLOBAL_VARIABLE_IS_WIFI = 8,
+    FLOW_GLOBAL_VARIABLE_TIME_INFO_ARRAY = 9,
+    FLOW_GLOBAL_VARIABLE_DATE_YY = 10,
+    FLOW_GLOBAL_VARIABLE_SAVE_TIME = 11
+};
+
+// Native global variables
+
+
+
+#ifdef __cplusplus
+}
+#endif
+
+#endif /*EEZ_LVGL_UI_VARS_H*/

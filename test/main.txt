@@ -1,0 +1,170 @@
+#include <Arduino.h>
+#include <math.h>
+#include <Wire.h>
+
+#include "lvgl_setup.h"
+#include "communication/communication.h"
+#include "controll/contoll.h"
+#include "rtcTime/rtc_time.h"
+#include "storage/storage.h"
+#include "webapp/web.h"
+#include "pin_config.h"
+#include "ui.h"
+#include "vars.h"
+
+HWCDC USBSerial;
+SensorPCF85063 rtcSensor;
+
+void applyWiFiMode(void *param);
+void applyLVGLTheme(void *param);
+
+extern bool switchWiFiAP();
+extern void setTimeHHMM(const char* hhmm);
+
+bool initializHardware(){
+  Wire.begin(IIC_SDA, IIC_SCL);
+  if (!rtcSensor.init(Wire, PCF85063_SLAVE_ADDRESS, IIC_SDA, IIC_SCL)) {
+    USBSerial.println("RTC sensor init failed!");
+    return false;
+  }
+  return true;
+
+}
+
+bool isWifiAP = false;
+bool wifiAP = false;
+String HH_MM = "00:00";
+
+static Communication comm; 
+static Control control;
+
+void setup() {
+  USBSerial.begin(115200);
+  delay(2000);
+  if (!initializHardware())
+  {
+    USBSerial.println("Hardware initialization failed!");
+    while (1);
+  }
+  USBSerial.println("Hardware initialization succes");
+
+  if (RTC_TIME.begin(&rtcSensor))
+  {
+    RTC_TIME.iso8601();
+    USBSerial.println("RTC initialized");
+  }
+
+  if (!STORAGE.init())
+  {
+    Serial.println(F("[Storage] init failed"));
+  }
+
+  lvgl_init();
+  USBSerial.println("LVGL initialized");
+  ui_init();
+  USBSerial.println("UI initialized");
+
+ 
+  
+  // TaskHandle_t wifiTaskHandle;
+  // xTaskCreatePinnedToCore(
+  //     applyWiFiMode,   /* Function to implement the task */
+  //     "WiFiTask",     /* Name of the task */
+  //     8192,           /* Stack size in words */
+  //     NULL,           /* Task input parameter */
+  //     1,              /* Priority of the task */
+  //     &wifiTaskHandle,/* Task handle. */
+  //     0);             /* Core where the task should run */ 
+
+  // TaskHandle_t lvglTaskHandle;
+  // xTaskCreatePinnedToCore(
+  //     applyLVGLTheme,   /* Function to implement the task */
+  //     "LVGLTask",     /* Name of the task */
+  //     16384,           /* Stack size in words */
+  //     NULL,           /* Task input parameter */
+  //     1,              /* Priority of the task */
+  //     &lvglTaskHandle,/* Task handle. */
+  //     1);             /* Core where the task should run */
+}
+
+void loop() {
+  isWifiAP = switchWiFiAP();
+  if (wifiAP != isWifiAP)
+  {
+    wifiAP = isWifiAP;
+    if (wifiAP){
+      comm.init();
+      control.init();
+      static Webapp web; // local static so it persists
+      web.init();
+    }
+    else{
+      comm.stop();
+    }
+  }
+
+  static uint32_t lastCheck = 0;
+  if (millis() - lastCheck > 10000){
+    lastCheck = millis();
+    HH_MM = RTC_TIME.printTime();
+  }
+
+  comm.loop();
+  control.loop();
+
+  setTimeHHMM((HH_MM).c_str());
+
+  lvgl_handler();
+  ui_tick();
+
+  delay(5);
+}
+
+void applyWiFiMode(void *param){
+  bool wifiAP = false;
+  while (true)
+  {
+    if (wifiAP != isWifiAP)
+    {
+      wifiAP = isWifiAP;
+      if (wifiAP){
+        comm.init();
+        control.init();
+        static Webapp web; // local static so it persists
+        web.init();
+      }
+      else{
+        comm.stop();
+      }
+    }
+
+    static uint32_t lastCheck = 0;
+    if (millis() - lastCheck > 10000){
+      lastCheck = millis();
+      HH_MM = RTC_TIME.printTime();
+    }
+
+    comm.loop();
+    control.loop();
+
+    vTaskDelay(10);
+    
+  }
+  
+}
+
+void applyLVGLTheme(void *param){
+  lvgl_init();
+  USBSerial.println("LVGL initialized");
+  ui_init();
+  USBSerial.println("UI initialized");
+  while (true)
+  {
+    isWifiAP = switchWiFiAP();
+    setTimeHHMM((HH_MM).c_str());
+    lvgl_handler();
+    ui_tick();
+    vTaskDelay(10);
+  }
+  
+}
