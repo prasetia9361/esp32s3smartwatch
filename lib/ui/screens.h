@@ -16,10 +16,17 @@ typedef struct _objects_t {
     lv_obj_t *audioo_1;
     lv_obj_t *alarm_1;
     lv_obj_t *date_time;
+    lv_obj_t *healty_2;
+    lv_obj_t *iwayat_hidrasi;
+    lv_obj_t *hasilhidrasi;
+    lv_obj_t *submenuwifi;
+    lv_obj_t *submenuhotspot;
     lv_obj_t *button_alarm_1;
     lv_obj_t *button_audio_1;
     lv_obj_t *button_background_1;
     lv_obj_t *button_date_time;
+    lv_obj_t *button_date_time_1;
+    lv_obj_t *button_date_time_2;
     lv_obj_t *button_healty_1;
     lv_obj_t *button_lock_1;
     lv_obj_t *button_setting_1;
@@ -27,18 +34,21 @@ typedef struct _objects_t {
     lv_obj_t *button_tampilan_1;
     lv_obj_t *buttonsavetime;
     lv_obj_t *hourroller;
+    lv_obj_t *inputama_1;
+    lv_obj_t *inputbb_1;
     lv_obj_t *inputday;
+    lv_obj_t *inputusia_1;
     lv_obj_t *inputyear;
+    lv_obj_t *keyboard_bb_1;
     lv_obj_t *keyboard_day;
+    lv_obj_t *keyboard_nams_1;
+    lv_obj_t *keyboard_usia_1;
     lv_obj_t *keyboard_year;
     lv_obj_t *minuteroller;
     lv_obj_t *monthroller;
+    lv_obj_t *nama_1;
     lv_obj_t *obj0;
     lv_obj_t *obj1;
-    lv_obj_t *obj10;
-    lv_obj_t *obj11;
-    lv_obj_t *obj12;
-    lv_obj_t *obj13;
     lv_obj_t *obj14;
     lv_obj_t *obj15;
     lv_obj_t *obj16;
@@ -64,12 +74,31 @@ typedef struct _objects_t {
     lv_obj_t *obj34;
     lv_obj_t *obj35;
     lv_obj_t *obj36;
+    lv_obj_t *obj37;
+    lv_obj_t *obj38;
+    lv_obj_t *obj39;
     lv_obj_t *obj4;
+    lv_obj_t *obj40;
+    lv_obj_t *obj41;
+    lv_obj_t *obj42;
+    lv_obj_t *obj43;
+    lv_obj_t *obj44;
+    lv_obj_t *obj45;
+    lv_obj_t *obj46;
+    lv_obj_t *obj47;
+    lv_obj_t *obj48;
+    lv_obj_t *obj49;
     lv_obj_t *obj5;
+    lv_obj_t *obj50;
+    lv_obj_t *obj51;
     lv_obj_t *obj6;
     lv_obj_t *obj7;
-    lv_obj_t *obj8;
-    lv_obj_t *obj9;
+    lv_obj_t *obj7__obj10;
+    lv_obj_t *obj7__obj11;
+    lv_obj_t *obj7__obj12;
+    lv_obj_t *obj7__obj13;
+    lv_obj_t *obj7__obj8;
+    lv_obj_t *obj7__obj9;
     lv_obj_t *secondroller;
 } objects_t;
 
@@ -84,6 +113,12 @@ enum ScreensEnum {
     SCREEN_ID_AUDIOO_1 = 6,
     SCREEN_ID_ALARM_1 = 7,
     SCREEN_ID_DATE_TIME = 8,
+    SCREEN_ID_HEALTY_2 = 9,
+    SCREEN_ID_IWAYAT_HIDRASI = 10,
+    SCREEN_ID_HASILHIDRASI = 11,
+    SCREEN_ID_SUBMENUWIFI = 12,
+    SCREEN_ID_SUBMENUHOTSPOT = 13,
+    SCREEN_ID_HEADER_INFO = 14,
 };
 
 void create_screen_main();
@@ -109,6 +144,24 @@ void tick_screen_alarm_1();
 
 void create_screen_date_time();
 void tick_screen_date_time();
+
+void create_screen_healty_2();
+void tick_screen_healty_2();
+
+void create_screen_iwayat_hidrasi();
+void tick_screen_iwayat_hidrasi();
+
+void create_screen_hasilhidrasi();
+void tick_screen_hasilhidrasi();
+
+void create_screen_submenuwifi();
+void tick_screen_submenuwifi();
+
+void create_screen_submenuhotspot();
+void tick_screen_submenuhotspot();
+
+void create_user_widget_header_info(lv_obj_t *parent_obj, void *flowState, int startWidgetIndex);
+void tick_user_widget_header_info(void *flowState, int startWidgetIndex);
 
 void create_screens();
 void tick_screen(int screen_index);

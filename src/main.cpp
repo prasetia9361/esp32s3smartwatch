@@ -9,7 +9,11 @@
 // #include "rtcTime/rtc_time.h"
 #include "SensorPCF85063.hpp"
 #include "ntpSetup/ntp_setup.h"
+#include "batteryMonitor/battery_monitor.h"
+#include "SensorQMI8658.hpp"
+#include "stepCounter/step_counter.h"
 #include "storage/storage.h"
+#include "memory/memory.h"
 // #include "webapp/web.h"
 #include "pin_config.h"
 #include "ui.h"
@@ -19,6 +23,13 @@ HWCDC USBSerial;
 WiFiSetup wifiSetup(WIFI_SSID, WIFI_PASSWORD, WIFI_FALLBACK_SSID, WIFI_FALLBACK_PASSWORD);
 NTPSetup ntpSetup(NTP_TIMEZONE, NTP_SERVER1, NTP_SERVER2, NTP_SERVER3);
 SensorPCF85063 rtc;
+Memory memory;
+
+XPowersPMU power;
+BatteryMonitor battery;
+
+SensorQMI8658 sensorStepper;
+StepCounter stepCounter;
 
 void applyWiFiMode(void *param);
 void applySensor(void *param);
@@ -26,9 +37,15 @@ void applySensor(void *param);
 extern bool switchWiFiAP();
 extern bool switchWiFi();
 extern bool saveDate();
+extern void chargeState(bool isCharge);
 extern void setTimeHHMM(const char* hhmm);
 extern void setCurrentDate(const char* datetime);
+extern void setBT(int32_t persent);
+extern void setStep(int32_t step);
 extern uint16_t *getDateTime();
+extern int32_t getBatteryPersentage();
+extern int isStep();
+
 
 int lastDay = -1;
 int currentDay = -1;
@@ -45,6 +62,37 @@ String CURRENT_DATE = "TUE 18/10/2025";
 
 // static Communication comm; 
 // static Control control;
+
+bool initializeHardware(){
+  Wire.begin(IIC_SDA,IIC_SCL);
+  bool powerResult = power.begin(Wire, AXP2101_SLAVE_ADDRESS, IIC_SDA, IIC_SCL);
+  if (!powerResult)
+  {
+      USBSerial.println("PMU initialization failed!");
+      return false;
+  }
+
+  // Configure power management
+  power.disableIRQ(XPOWERS_AXP2101_ALL_IRQ);
+  power.setChargeTargetVoltage(3);
+  power.clearIrqStatus();
+  power.enableIRQ(XPOWERS_AXP2101_PKEY_SHORT_IRQ);
+
+  bool qmiResult = sensorStepper.begin(Wire, QMI8658_L_SLAVE_ADDRESS, IIC_SDA, IIC_SCL);
+  if (!qmiResult) {
+    USBSerial.println("QMI8658 initialization failed!");
+    return false;
+  }
+  
+  // Configure accelerometer
+  sensorStepper.configAccelerometer(SensorQMI8658::ACC_RANGE_4G, 
+                          SensorQMI8658::ACC_ODR_1000Hz, 
+                          SensorQMI8658::LPF_MODE_0);
+  sensorStepper.enableAccelerometer();
+
+  USBSerial.println("Hardware initialized successfully");
+  return true;
+}
 
 void updateTimeDisplay() {
     if (!ntpSetup.isInitialized()) {
@@ -110,6 +158,14 @@ void setup() {
   ui_init();
   USBSerial.println("UI initialized");
   
+  // Initialize hardware
+  // while (!initializeHardware()) {
+  //     USBSerial.println("Hardware initialization failed!");
+  //     delay(100);
+  // }
+
+  
+
   // if (!RTC_TIME.begin(PCF85063_SLAVE_ADDRESS, IIC_SDA, IIC_SCL))
   // {
     
@@ -240,11 +296,35 @@ void applyWiFiMode(void *param){
 }
 
 void applySensor(void *param){
+
+  // Initialize hardware
+  while (!initializeHardware()) {
+      USBSerial.println("Hardware initialization failed!");
+      delay(100);
+  }
+  
+  if (!battery.init(&power))
+  {
+      USBSerial.println("Battery monitor initialization failed!");
+  } else {
+      USBSerial.println("Battery monitor initialized");
+  }
+  
+  
   if (!rtc.begin(Wire, PCF85063_SLAVE_ADDRESS, IIC_SDA, IIC_SCL)) {
     USBSerial.println("Failed to find PCF8563 - check your wiring!");
   }else
   {
     USBSerial.println("Success to find PCF8563");
+  }
+
+  if (!stepCounter.init(&sensorStepper)) {
+      USBSerial.println("Step counter initialization failed!");
+  } else {
+      USBSerial.println("Step counter initialized");
+      // Set custom threshold if needed
+      stepCounter.setThreshold(1.8);
+      stepCounter.setSoundEnabled(true);
   }
 
   uint16_t year = 2025;
@@ -261,6 +341,14 @@ void applySensor(void *param){
   
   while (true)
   {
+    stepCounter.handleButton(isStep());
+    battery.update();
+    stepCounter.update();
+
+    chargeState(battery.isCharging());
+    setBT(battery.getBatteryPercentage());
+    setStep(stepCounter.getStepCount());
+
     isWifiAP = switchWiFiAP();
     isWifi = switchWiFi();
     if (isNtp)
@@ -320,7 +408,16 @@ void applySensor(void *param){
       }
 
     }
-    vTaskDelay(5);
+
+    uint32_t status = power.getIrqStatus();
+    if (power.isPekeyShortPressIrq())
+    {
+      battery.disableADC();
+      power.shutdown();
+    }
+    power.clearIrqStatus();
+    
+  vTaskDelay(5);
   }
   
 }

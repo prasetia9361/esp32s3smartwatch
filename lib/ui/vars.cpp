@@ -16,11 +16,11 @@ bool saveDate(){
 }
 
 void setTimeHHMM(const char* hhmm){
-  return flow::setGlobalVariable(FLOW_GLOBAL_VARIABLE_HH_MM, hhmm);
+  flow::setGlobalVariable(FLOW_GLOBAL_VARIABLE_HH_MM, hhmm);
 }
 
 void setCurrentDate(const char* datetime){
-  return flow::setGlobalVariable(FLOW_GLOBAL_VARIABLE_CURRENT_DATE, datetime);
+  flow::setGlobalVariable(FLOW_GLOBAL_VARIABLE_CURRENT_DATE, datetime);
 }
 
 uint16_t *getDateTime(){
@@ -40,4 +40,23 @@ uint16_t *getDateTime(){
         timeBuffer[i] = 0;
     }
     return timeBuffer;
+}
+
+void chargeState(bool isCharge){
+  flow::setGlobalVariable(FLOW_GLOBAL_VARIABLE_IS_CHARGE, isCharge);
+}
+
+int32_t getBatteryPersentage(){
+  return flow::getGlobalVariable(FLOW_GLOBAL_VARIABLE_BT).getInt32();
+}
+
+void setBT(int32_t persent){
+  flow::setGlobalVariable(FLOW_GLOBAL_VARIABLE_BT, persent);
+}
+
+void setStep(int32_t step){
+  flow::setGlobalVariable(FLOW_GLOBAL_VARIABLE_FOOTSTEP, step);
+}
+int isStep(){
+  return flow::getGlobalVariable(FLOW_GLOBAL_VARIABLE_ISSTEP).getInt();
 }

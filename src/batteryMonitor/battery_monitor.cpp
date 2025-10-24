@@ -3,6 +3,8 @@
 
 BatteryMonitor::BatteryMonitor() 
     : power(nullptr), lastUpdate(0) {
+        charging = false;
+        batteryPercent = 0;
 }
 
 bool BatteryMonitor::init(XPowersPMU* pmu){
@@ -24,19 +26,21 @@ void BatteryMonitor::update() {
         
         if (!power) return;
         
-        int batteryPercent = power->getBatteryPercent();
-        bool charging = power->isCharging();
+        int _batteryPercent = power->getBatteryPercent();
+        charging = power->isCharging();
         
         // Ensure valid range
-        if (batteryPercent < 0) batteryPercent = 0;
-        if (batteryPercent > 100) batteryPercent = 100;
+        if (_batteryPercent < 10) _batteryPercent = 10;
+        if (_batteryPercent > 86) _batteryPercent = 86;
+
+        batteryPercent = map(_batteryPercent, 10, 86, 0, 100);
         
         // Update arc value (0-100)
         // lv_arc_set_value(arc_battery, batteryPercent);
         
         // Update label with just the number (no % symbol)
-        char batteryStr[4];
-        snprintf(batteryStr, sizeof(batteryStr), "%d", batteryPercent);
+        // char batteryStr[4];
+        // snprintf(batteryStr, sizeof(batteryStr), "%d", batteryPercent);
         // lv_label_set_text(label_battery, batteryStr);
         
         // Update battery icon based on charging status
@@ -54,12 +58,14 @@ void BatteryMonitor::update() {
 
 int BatteryMonitor::getBatteryPercentage() {
     if (!power) return 0;
-    return power->getBatteryPercent();
+    return batteryPercent;
+    // return power->getBatteryPercent();
 }
 
 bool BatteryMonitor::isCharging() {
     if (!power) return false;
-    return power->isCharging();
+    return charging;
+    // return power->isCharging();
 }
 
 void BatteryMonitor::enableADC() {

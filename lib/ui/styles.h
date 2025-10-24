@@ -10,11 +10,16 @@ extern "C" {
 extern void apply_style_panel_transparan(lv_obj_t *obj);
 extern void apply_style_icon(lv_obj_t *obj);
 extern void apply_style_fontcore(lv_obj_t *obj);
+extern void apply_style_subtitle(lv_obj_t *obj);
 extern void apply_style_submenu(lv_obj_t *obj);
 extern void apply_style_buton_ssubmenu(lv_obj_t *obj);
 extern void apply_style_clengkuengstyle(lv_obj_t *obj);
 extern void apply_style_styleinputtext(lv_obj_t *obj);
 extern void apply_style_keyboardstyle(lv_obj_t *obj);
+extern void apply_style_buttonback(lv_obj_t *obj);
+extern void apply_style_button_menu(lv_obj_t *obj);
+extern void apply_style_button_style_new(lv_obj_t *obj);
+extern void apply_style_iconimage(lv_obj_t *obj);
 
 
 #ifdef __cplusplus

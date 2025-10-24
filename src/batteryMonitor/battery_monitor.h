@@ -10,6 +10,8 @@ private:
     // lv_obj_t* arc_battery;
     // lv_obj_t* label_battery;
     // lv_obj_t* battery_icon;
+    int batteryPercent;
+    bool charging;
     unsigned long lastUpdate;
     const unsigned long UPDATE_INTERVAL = 5000; // Update every 5 seconds
     

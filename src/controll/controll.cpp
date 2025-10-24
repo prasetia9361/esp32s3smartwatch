@@ -1,4 +1,4 @@
-#include "contoll.h"
+#include "controll.h"
 #include "rtcTime/rtc_time.h"
 #include "storage/storage.h"
 
