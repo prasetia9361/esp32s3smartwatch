@@ -13,7 +13,6 @@
 #include "SensorQMI8658.hpp"
 #include "stepCounter/step_counter.h"
 #include "storage/storage.h"
-#include "memory/memory.h"
 // #include "webapp/web.h"
 #include "pin_config.h"
 #include "ui.h"
@@ -23,7 +22,6 @@ HWCDC USBSerial;
 WiFiSetup wifiSetup(WIFI_SSID, WIFI_PASSWORD, WIFI_FALLBACK_SSID, WIFI_FALLBACK_PASSWORD);
 NTPSetup ntpSetup(NTP_TIMEZONE, NTP_SERVER1, NTP_SERVER2, NTP_SERVER3);
 SensorPCF85063 rtc;
-Memory memory;
 
 XPowersPMU power;
 BatteryMonitor battery;
@@ -157,15 +155,13 @@ void setup() {
   USBSerial.println("LVGL initialized");
   ui_init();
   USBSerial.println("UI initialized");
-  
-  // Initialize hardware
-  // while (!initializeHardware()) {
-  //     USBSerial.println("Hardware initialization failed!");
-  //     delay(100);
-  // }
 
+    // Initialize hardware
+  while (!initializeHardware()) {
+      USBSerial.println("Hardware initialization failed!");
+      delay(100);
+  }
   
-
   // if (!RTC_TIME.begin(PCF85063_SLAVE_ADDRESS, IIC_SDA, IIC_SCL))
   // {
     
@@ -297,12 +293,7 @@ void applyWiFiMode(void *param){
 
 void applySensor(void *param){
 
-  // Initialize hardware
-  while (!initializeHardware()) {
-      USBSerial.println("Hardware initialization failed!");
-      delay(100);
-  }
-  
+
   if (!battery.init(&power))
   {
       USBSerial.println("Battery monitor initialization failed!");

@@ -28,6 +28,10 @@ bool StepCounter::init(SensorQMI8658* sensor) {
     // // Initialize button to unchecked state
     // lv_obj_clear_state(button_walk, LV_STATE_CHECKED);
     currentState = STATE_STOPPED;
+
+
+
+    
     
     // Initialize UI
     updateUI();

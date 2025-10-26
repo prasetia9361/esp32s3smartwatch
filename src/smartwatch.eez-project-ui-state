@@ -1,6 +1,6 @@
 {
   "navigation": {
-    "selectedUserPageObject": "[smartwatch.eez-project]:/userPages/4",
+    "selectedUserPageObject": "[smartwatch.eez-project]:/userPages/0",
     "selectedGlobalVariableObject": "[smartwatch.eez-project]:/variables/globalVariables/19",
     "selectedFontObject": "[smartwatch.eez-project]:/fonts/3",
     "selectedBitmapObject": "[smartwatch.eez-project]:/bitmaps/8",
@@ -185,16 +185,17 @@
               "type": "tabset",
               "id": "EDITORS",
               "weight": 57.487008166295475,
+              "selected": 1,
               "enableDeleteWhenEmpty": false,
               "enableClose": false,
               "children": [
                 {
                   "type": "tab",
                   "id": "#52cd7d9e-d332-463c-a754-1e292e67026e",
-                  "name": "healty_1",
+                  "name": "hasilhidrasi",
                   "component": "editor",
                   "config": {
-                    "objectPath": "[smartwatch.eez-project]:/userPages/4",
+                    "objectPath": "[smartwatch.eez-project]:/userPages/10",
                     "permanent": false
                   },
                   "icon": "svg:page"
@@ -944,10 +945,7 @@
     "[smartwatch.eez-project]:/userPages/0[flow-state]": {
       "selection": {
         "0": {
-          "1": {
-            "2": {}
-          },
-          "2": {}
+          "3": {}
         },
         "2": {}
       },
@@ -1271,8 +1269,7 @@
   "lvglExpandedPropertiesGroup": [
     "TEXT",
     "MISCELLANEOUS",
-    "POSITION AND SIZE",
-    "BACKGROUND"
+    "POSITION AND SIZE"
   ],
   "showInactiveFlowsInDebugger": true
 }
