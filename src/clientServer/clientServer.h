@@ -1,4 +1,4 @@
-#include <Arduino.h>
+// #include <Arduino.h>
 #ifndef CLIENTSERVER_H
 #define CLIENTSERVER_H
 
@@ -11,7 +11,7 @@
 class Memory;
 class clientServer {
    private:
-    Memory *memory;
+    Memory memory;
     AsyncWebServer server;
     String fileNameDelete;
     String fileNameOpening;
@@ -21,12 +21,10 @@ class clientServer {
     void upload();
     void delet();
     void list();
-    void notFound();
-    void init();
     /* data */
    public:
     clientServer() : server(80){}
-    void setup(Memory *_memory);
+    void begin();
     String getFileOpening() { return fileNameOpening; };
     // void getDataRequest();
 };

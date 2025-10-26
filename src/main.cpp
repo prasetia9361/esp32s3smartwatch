@@ -3,7 +3,7 @@
 #include <Wire.h>
 
 #include "lvgl_setup.h"
-// #include "communication/communication.h"
+#include "communication/communication.h"
 // #include "controll/contoll.h"
 #include "wifiSetup/wifi_setup.h"
 // #include "rtcTime/rtc_time.h"
@@ -13,14 +13,20 @@
 #include "SensorQMI8658.hpp"
 #include "stepCounter/step_counter.h"
 #include "storage/storage.h"
+#include "memory/memory.h"
+#include "clientServer/clientServer.h"
 // #include "webapp/web.h"
 #include "pin_config.h"
 #include "ui.h"
 #include "vars.h"
+//"http://192.168.7.1"
 
 HWCDC USBSerial;
 WiFiSetup wifiSetup(WIFI_SSID, WIFI_PASSWORD, WIFI_FALLBACK_SSID, WIFI_FALLBACK_PASSWORD);
 NTPSetup ntpSetup(NTP_TIMEZONE, NTP_SERVER1, NTP_SERVER2, NTP_SERVER3);
+static Communication comm; 
+Memory memory;
+clientServer webServer;
 SensorPCF85063 rtc;
 
 XPowersPMU power;
@@ -199,13 +205,12 @@ void loop() {
 
 void applyWiFiMode(void *param){
   bool wifiAP = false;
-  // if (!RTC_TIME.begin(PCF85063_SLAVE_ADDRESS, IIC_SDA, IIC_SCL))
-  // {
-    
-  // USBSerial.println("RTC fail initialized");
-  // }
-  // USBSerial.println("RTC initialized");
-  // RTC_TIME.iso8601();
+  
+  while (!memory.begin(USBSerial))
+  {
+    USBSerial.println("Memory initialization failed!");
+    delay(100);
+  }
 
   if (!STORAGE.init())
   {
@@ -230,15 +235,17 @@ void applyWiFiMode(void *param){
       wifiAP = isWifiAP;
 
       if (wifiAP){
-        // comm.init();
-        // control.init();
-        // static Webapp web; // local static so it persists
-        // web.init();
+        comm.init();
+        webServer.begin();
       }
       else{
-        // comm.stop();
+        comm.stop();
       }
     }
+
+    // if(isWifiAP){
+    //   comm.loop();
+    // }
 
     if (isWifi != wifi)
     {
@@ -274,7 +281,11 @@ void applyWiFiMode(void *param){
           updateTimeDisplay();
           lastTimeUpdate = currentTime;
       }
+    }else
+    {
+      comm.loop();
     }
+    
 
     // static uint32_t lastCheck = 0;
     // if (millis() - lastCheck > 1000){

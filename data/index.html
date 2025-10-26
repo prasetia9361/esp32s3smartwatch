@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Mochi WebServer</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+        }
+        #background-video {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            object-fit: cover;
+        }
+        h1 {
+            text-align: center;
+            color: #4CAF50;
+            margin-bottom: 40px;
+            font-size: 3em;
+        }
+        h2 {
+            color: #fff;
+        }
+        .container {
+            max-width: 800px;
+            margin: auto;
+            text-align: center;
+            padding: 20px;
+        }
+        .file-upload, .file-actions {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
+            margin-bottom: 20px;
+            transition: background 0.3s, box-shadow 0.3s;
+        }
+        input[type="file"], select {
+            width: 100%;
+            padding: 10px;
+            margin: 10px 0;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            background-color: #444;
+            color: #fff;
+        }
+        input[type="submit"], button {
+            background-color: #4CAF50;
+            color: white;
+            padding: 10px 20px;
+            margin: 10px 0;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background-color 0.3s, transform 0.3s;
+        }
+        input[type="submit"]:hover, button:hover {
+            background-color: #45a049;
+            transform: scale(1.05);
+        }
+        .file-actions {
+            display: flex;
+            justify-content: space-between;
+        }
+        .file-actions div {
+            width: 48%;
+        }
+        .toggle-button {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background-color: #333;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        @keyframes bounce {
+            0%, 20%, 50%, 80%, 100% {
+                transform: translateY(0);
+            }
+            40% {
+                transform: translateY(-30px);
+            }
+            60% {
+                transform: translateY(-15px);
+            }
+        }
+        .tech-animation {
+            font-size: 2em;
+            color: #4CAF50;
+            animation: bounce 2s infinite;
+            display: inline-block;
+            margin: 0 auto;
+            position: relative;
+        }
+        .glow-on-hover {
+            width: 220px;
+            height: 50px;
+            border: none;
+            outline: none;
+            color: #fff;
+            background: #111;
+            cursor: pointer;
+            position: relative;
+            z-index: 0;
+            border-radius: 10px;
+            transition: background-color 0.3s;
+        }
+        .glow-on-hover:before {
+            content: '';
+            background: linear-gradient(45deg, #ff0000, #ff7300, #fffb00, #48ff00, #00ffd5, #002bff, #7a00ff, #ff00f2, #ff0000);
+            position: absolute;
+            top: -2px;
+            left: -2px;
+            background-size: 400%;
+            z-index: -1;
+            filter: blur(5px);
+            width: calc(100% + 4px);
+            height: calc(100% + 4px);
+            animation: glowing 20s linear infinite;
+            border-radius: 10px;
+        }
+        .glow-on-hover:active {
+            color: #000;
+        }
+        @keyframes glowing {
+            0% { background-position: 0 0; }
+            50% { background-position: 400% 0; }
+            100% { background-position: 0 0; }
+        }
+        .glow-on-hover:after {
+            z-index: -1;
+            content: '';
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            background: #111;
+            left: 0;
+            top: 0;
+            border-radius: 10px;
+        }
+    </style>
+    <script>
+        function checkFileSize() {
+            var fileInput = document.getElementById('fileInput');
+            if (fileInput.files.length > 0) {
+                var fileSize = fileInput.files[0].size; // ukuran file dalam bytes
+                var maxSize = 1000 * 1024; // ukuran maksimum dalam bytes (500KB)
+                var minSize = 60 * 1024; // ukuran minimum dalam bytes (100KB)
+
+                if (fileSize > maxSize) {
+                    alert('File terlalu besar! Harap unggah file yang lebih kecil.');
+                    fileInput.value = ''; // hapus file yang dipilih
+                    return false;
+                } else if (fileSize < minSize) {
+                    alert('File terlalu kecil! Harap unggah file yang lebih besar.');
+                    fileInput.value = ''; // hapus file yang dipilih
+                    return false;
+                }
+            }
+            return true;
+        }
+
+        function deleteFile() {
+            var select = document.getElementById('fileSelect');
+            var filename = select.options[select.selectedIndex].value;
+            if (!filename) {
+                alert('Pilih file yang ingin dihapus.');
+                return;
+            }
+            if (confirm('Apakah Anda yakin ingin menghapus file ' + filename + '?')) {
+                var xhr = new XMLHttpRequest();
+                xhr.open('GET', '/delete?filename=' + filename, true);
+                xhr.onload = function() {
+                    if (xhr.status == 200) {
+                        alert('File ' + filename + 'berhasil dihapus!');
+                        location.reload(); // muat ulang halaman setelah penghapusan berhasil
+                    } else {
+                        alert('Gagal menghapus file ' + filename);
+                    }
+                };
+                xhr.send();
+            }
+        }
+
+        function setOpeningFile() {
+            var select = document.getElementById('fileOpening');
+            var filename = select.options[select.selectedIndex].value;
+            if (!filename) {
+                alert('Pilih file yang ingin dijadikan opening.');
+                return;
+            }
+            if (confirm('Apakah Anda yakin ingin menjadikan file ' + filename + ' sebagai opening?')) {
+                var xhr = new XMLHttpRequest();
+                xhr.open('GET', '/opening?filename=' + filename, true);
+                xhr.onload = function() {
+                    if (xhr.status == 200) {
+                        alert('File ' + filename + 'berhasil menjadi opening!');
+                        location.reload(); // muat ulang halaman setelah sukses
+                    } else {
+                        alert('Gagal menjadikan opening pada file ' + filename);
+                    }
+                };
+                xhr.send();
+            }
+        }
+
+        async function populateFileList() {
+            var response = await fetch('/list');
+            var fileList = await response.json();
+            var selectElement = document.getElementById('fileSelect');
+            var openingElement = document.getElementById('fileOpening');
+            fileList.forEach(function(fileName) {
+                var option = document.createElement('option');
+                option.value = fileName;
+                option.textContent = fileName;
+                selectElement.appendChild(option);
+
+                var optionOpening = document.createElement('option');
+                optionOpening.value = fileName;
+                optionOpening.textContent = fileName;
+                openingElement.appendChild(optionOpening);
+            });
+        }
+
+        window.onload = populateFileList;
+    </script>
+</head>
+<body>
+    <video id="background-video" autoplay loop muted>
+        <source src="321.mp4" type="video/mp4">
+        Your browser does not support the video tag.
+    </video>
+
+    <div class="container">
+        <h1>Mochi System</h1>
+        <div class="tech-animation">&#129302; Welcome to Mochi System &#129302;</div>
+        
+        <div class="file-upload">
+            <h2>Upload File :</h2>
+            <form action="/upload" method="post" enctype="multipart/form-data" onsubmit="return checkFileSize()">
+                <input type="file" name="file" id="fileInput" accept=".mp3" required>
+                <input type="submit" value="Upload" class="glow-on-hover">
+            </form>
+        </div>
+
+        <div class="file-actions">
+            <div>
+                <h2>Delete File:</h2>
+                <select id="fileSelect">
+                    <!-- Daftar file akan ditambahkan secara dinamis oleh JavaScript -->
+                </select>
+                <button onclick="deleteFile()" class="glow-on-hover">Delete</button>
+            </div>
+            <div>
+                <h2>Setting Opening:</h2>
+                <select id="fileOpening">
+                    <!-- Daftar file akan ditambahkan secara dinamis oleh JavaScript -->
+                </select>
+                <button onclick="setOpeningFile()" class="glow-on-hover">Setting</button>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

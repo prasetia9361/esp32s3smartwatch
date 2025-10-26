@@ -11,6 +11,14 @@
         "initializer_list": "cpp",
         "regex": "cpp",
         "*.tpp": "cpp",
-        "cstdint": "cpp"
+        "cstdint": "cpp",
+        "bitset": "cpp",
+        "memory": "cpp",
+        "memory_resource": "cpp",
+        "format": "cpp",
+        "iosfwd": "cpp",
+        "new": "cpp",
+        "sstream": "cpp",
+        "stop_token": "cpp"
     }
 }
