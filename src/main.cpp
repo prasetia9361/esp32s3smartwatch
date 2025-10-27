@@ -3,7 +3,7 @@
 #include <Wire.h>
 
 #include "lvgl_setup.h"
-#include "communication/communication.h"
+// #include "communication/communication.h"
 // #include "controll/contoll.h"
 #include "wifiSetup/wifi_setup.h"
 // #include "rtcTime/rtc_time.h"
@@ -21,19 +21,23 @@
 #include "vars.h"
 //"http://192.168.7.1"
 
+// Tambahkan deklarasi Mutex di bagian global
+SemaphoreHandle_t i2cMutex;
+
 HWCDC USBSerial;
-WiFiSetup wifiSetup(WIFI_SSID, WIFI_PASSWORD, WIFI_FALLBACK_SSID, WIFI_FALLBACK_PASSWORD);
+WifiSetup wifiSetup;
+// WiFiSetup wifiSetup(WIFI_SSID, WIFI_PASSWORD, WIFI_FALLBACK_SSID, WIFI_FALLBACK_PASSWORD);
 NTPSetup ntpSetup(NTP_TIMEZONE, NTP_SERVER1, NTP_SERVER2, NTP_SERVER3);
-static Communication comm; 
-Memory memory;
+// static Communication comm; 
+Memory *memory;
 clientServer webServer;
 SensorPCF85063 rtc;
 
 XPowersPMU power;
-BatteryMonitor battery;
+BatteryMonitor *battery;
 
 SensorQMI8658 sensorStepper;
-StepCounter stepCounter;
+StepCounter *stepCounter;
 
 void applyWiFiMode(void *param);
 void applySensor(void *param);
@@ -155,7 +159,15 @@ void setup() {
   USBSerial.begin(115200);
   delay(2000);
 
+  memory = new Memory();
+  stepCounter = new StepCounter();
+  battery = new BatteryMonitor();
 
+  // Buat Mutex sebelum memulai task
+  i2cMutex = xSemaphoreCreateMutex();
+  if (i2cMutex == NULL) {
+      USBSerial.println("Failed to create I2C Mutex!");
+  }
 
   lvgl_init();
   USBSerial.println("LVGL initialized");
@@ -205,8 +217,8 @@ void loop() {
 
 void applyWiFiMode(void *param){
   bool wifiAP = false;
-  
-  while (!memory.begin(USBSerial))
+
+  while (!memory->begin(USBSerial))
   {
     USBSerial.println("Memory initialization failed!");
     delay(100);
@@ -214,7 +226,7 @@ void applyWiFiMode(void *param){
 
   if (!STORAGE.init())
   {
-      Serial.println(F("[Storage] init failed"));
+      USBSerial.println(F("[Storage] init failed"));
   }
   // wifiSetup.connect();
   
@@ -235,17 +247,19 @@ void applyWiFiMode(void *param){
       wifiAP = isWifiAP;
 
       if (wifiAP){
-        comm.init();
+        wifiSetup.connectAP();
+        wifiSetup.setupWiFiAP();
         webServer.begin();
       }
       else{
-        comm.stop();
+        wifiSetup.disconnectAP();
+        // comm.stop();
       }
     }
 
-    // if(isWifiAP){
-    //   comm.loop();
-    // }
+    if(isWifiAP){
+      wifiSetup.loopDns();
+    }
 
     if (isWifi != wifi)
     {
@@ -253,7 +267,8 @@ void applyWiFiMode(void *param){
 
       if (wifi)
       {
-        wifiSetup.connect();
+        wifiSetup.connectSTA();
+        wifiSetup.setupWiFiSTA(WIFI_SSID, WIFI_PASSWORD);
         if (wifiSetup.isConnected()) {
             // Set custom update interval if needed
             ntpSetup.setUpdateInterval(NTP_UPDATE_INTERVAL);
@@ -265,7 +280,7 @@ void applyWiFiMode(void *param){
         }
       }else
       {
-        wifiSetup.disconnect();
+        wifiSetup.disconnectSTA();
         isNtp = false;
       }
     }
@@ -281,9 +296,6 @@ void applyWiFiMode(void *param){
           updateTimeDisplay();
           lastTimeUpdate = currentTime;
       }
-    }else
-    {
-      comm.loop();
     }
     
 
@@ -304,29 +316,33 @@ void applyWiFiMode(void *param){
 
 void applySensor(void *param){
 
+  // Ambil Mutex sebelum inisialisasi hardware I2C
+  if (xSemaphoreTake(i2cMutex, portMAX_DELAY) == pdTRUE) {
+    if (!battery->init(&power))
+    {
+        USBSerial.println("Battery monitor initialization failed!");
+    } else {
+        USBSerial.println("Battery monitor initialized");
+    }
+    
+    
+    if (!rtc.begin(Wire, PCF85063_SLAVE_ADDRESS, IIC_SDA, IIC_SCL)) {
+      USBSerial.println("Failed to find PCF8563 - check your wiring!");
+    }else
+    {
+      USBSerial.println("Success to find PCF8563");
+    }
 
-  if (!battery.init(&power))
-  {
-      USBSerial.println("Battery monitor initialization failed!");
-  } else {
-      USBSerial.println("Battery monitor initialized");
-  }
-  
-  
-  if (!rtc.begin(Wire, PCF85063_SLAVE_ADDRESS, IIC_SDA, IIC_SCL)) {
-    USBSerial.println("Failed to find PCF8563 - check your wiring!");
-  }else
-  {
-    USBSerial.println("Success to find PCF8563");
-  }
-
-  if (!stepCounter.init(&sensorStepper)) {
-      USBSerial.println("Step counter initialization failed!");
-  } else {
-      USBSerial.println("Step counter initialized");
-      // Set custom threshold if needed
-      stepCounter.setThreshold(1.8);
-      stepCounter.setSoundEnabled(true);
+    if (!stepCounter->init(&sensorStepper)) {
+        USBSerial.println("Step counter initialization failed!");
+    } else {
+        USBSerial.println("Step counter initialized");
+        // Set custom threshold if needed
+        stepCounter->setThreshold(1.8);
+        stepCounter->setSoundEnabled(true);
+    }
+    // Lepaskan Mutex setelah selesai
+    xSemaphoreGive(i2cMutex);
   }
 
   uint16_t year = 2025;
@@ -336,20 +352,28 @@ void applySensor(void *param){
   uint8_t minute = 0;
   uint8_t second = 0;
 
-  rtc.setDateTime(year,month,day, hour, minute, second);
-
-
+  // Ambil Mutex sebelum operasi I2C
+  if (xSemaphoreTake(i2cMutex, portMAX_DELAY) == pdTRUE) {
+    rtc.setDateTime(year,month,day, hour, minute, second);
+    // Lepaskan Mutex setelah selesai
+    xSemaphoreGive(i2cMutex);
+  }
 
   
   while (true)
   {
-    stepCounter.handleButton(isStep());
-    battery.update();
-    stepCounter.update();
+    // Ambil Mutex sebelum blok operasi I2C
+    if (xSemaphoreTake(i2cMutex, portMAX_DELAY) == pdTRUE) {
+      stepCounter->handleButton(isStep());
+      battery->update();
+      stepCounter->update();
+      // Lepaskan Mutex setelah selesai
+      xSemaphoreGive(i2cMutex);
+    }
 
-    chargeState(battery.isCharging());
-    setBT(battery.getBatteryPercentage());
-    setStep(stepCounter.getStepCount());
+    chargeState(battery->isCharging());
+    setBT(battery->getBatteryPercentage());
+    setStep(stepCounter->getStepCount());
 
     isWifiAP = switchWiFiAP();
     isWifi = switchWiFi();
@@ -375,7 +399,12 @@ void applySensor(void *param){
         if (lastSaveDate)
         {
           uint16_t *dt = getDateTime(); 
-          rtc.setDateTime(dt[0],dt[1] + 1,dt[2],dt[3],dt[4],dt[5]);
+          // Ambil Mutex sebelum operasi I2C
+          if (xSemaphoreTake(i2cMutex, portMAX_DELAY) == pdTRUE) {
+            rtc.setDateTime(dt[0],dt[1] + 1,dt[2],dt[3],dt[4],dt[5]);
+            // Lepaskan Mutex setelah selesai
+            xSemaphoreGive(i2cMutex);
+          }
         }
       }
       
@@ -383,41 +412,50 @@ void applySensor(void *param){
       static uint32_t lastCheck = 0;
       if (millis() - lastCheck > 10000){
         lastCheck = millis();
-        RTC_DateTime dt = rtc.getDateTime();
-        char buf[7]; // "HH:MM" + null
-        snprintf(buf, sizeof(buf), "%02d:%02d", dt.hour, dt.minute);
-        // RTCHHMM = RTC_TIME.printTime();
-        setTimeHHMM(buf);
-        // USBSerial.println(HH_MM);
+        // Ambil Mutex sebelum operasi I2C
+        if (xSemaphoreTake(i2cMutex, portMAX_DELAY) == pdTRUE) {
+          RTC_DateTime dt = rtc.getDateTime();
+          // Lepaskan Mutex setelah selesai
+          xSemaphoreGive(i2cMutex);
+          char buf[7]; // "HH:MM" + null
+          snprintf(buf, sizeof(buf), "%02d:%02d", dt.hour, dt.minute);
+          // RTCHHMM = RTC_TIME.printTime();
+          setTimeHHMM(buf);
+          // USBSerial.println(HH_MM);
 
-        // char bufDate[11]; // "DD/MM/YYYY" + null
-        // snprintf(bufDate, sizeof(bufDate), "%02d/%02d/%04d", dt.day, dt.month, dt.year);
-        // RTCDATE = RTC_TIME.printDate();
-        currentDay = dt.week;
-        const char* weekdays[] = {"SUN", "MON", "TUE", "WED", "THU", "FRI", "SAT"};
-        char dateStr[18];
-        snprintf(dateStr, sizeof(dateStr), "%s %02d/%02d/%04d",
-                weekdays[currentDay], 
-                dt.day, 
-                dt.month, 
-                dt.year);
-        if (currentDay != lastDay)
-        {
-          setCurrentDate(dateStr);
-          lastDay = currentDay;
+          // char bufDate[11]; // "DD/MM/YYYY" + null
+          // snprintf(bufDate, sizeof(bufDate), "%02d/%02d/%04d", dt.day, dt.month, dt.year);
+          // RTCDATE = RTC_TIME.printDate();
+          currentDay = dt.week;
+          const char* weekdays[] = {"SUN", "MON", "TUE", "WED", "THU", "FRI", "SAT"};
+          char dateStr[18];
+          snprintf(dateStr, sizeof(dateStr), "%s %02d/%02d/%04d",
+                  weekdays[currentDay], 
+                  dt.day, 
+                  dt.month, 
+                  dt.year);
+          if (currentDay != lastDay)
+          {
+            setCurrentDate(dateStr);
+            lastDay = currentDay;
+          }
         }
-        
       }
 
     }
 
-    uint32_t status = power.getIrqStatus();
-    if (power.isPekeyShortPressIrq())
-    {
-      battery.disableADC();
-      power.shutdown();
+    // Ambil Mutex sebelum operasi I2C
+    if (xSemaphoreTake(i2cMutex, portMAX_DELAY) == pdTRUE) {
+      uint32_t status = power.getIrqStatus();
+      if (power.isPekeyShortPressIrq())
+      {
+        battery->disableADC();
+        power.shutdown();
+      }
+      power.clearIrqStatus();
+      // Lepaskan Mutex setelah selesai
+      xSemaphoreGive(i2cMutex);
     }
-    power.clearIrqStatus();
     
   vTaskDelay(5);
   }

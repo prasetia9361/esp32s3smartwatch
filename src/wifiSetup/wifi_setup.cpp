@@ -1,74 +1,67 @@
-// wifi_setup.cpp
 #include "wifi_setup.h"
-#include <WiFi.h>
 
-WiFiSetup::WiFiSetup(const char* ssid, const char* password) {
-    this->ssid = ssid;
-    this->password = password;
-    this->fallback_ssid = nullptr;
-    this->fallback_password = nullptr;
-    this->has_fallback = false;
-}
+WifiSetup::WifiSetup() {}
 
-WiFiSetup::WiFiSetup(const char* ssid, const char* password, const char* fallback_ssid, const char* fallback_password) {
-    this->ssid = ssid;
-    this->password = password;
-    this->fallback_ssid = fallback_ssid;
-    this->fallback_password = fallback_password;
-    this->has_fallback = true;
-}
-
-void WiFiSetup::connect() {
-    // Try primary network first
-    WiFi.mode(WIFI_STA);
-    WiFi.begin(ssid, password);
-    Serial.print("Connecting to primary WiFi: ");
-    Serial.println(ssid);
+void WifiSetup::setupWiFiAP() {
+    IPAddress apIP(192, 168, 7, 2);
+    IPAddress subNet(255, 255, 255, 0);
+    WiFi.softAPConfig(apIP, apIP, subNet);
+    WiFi.softAP(ssid1, password1, 6, 0, 4);
     
-    int attempts = 0;
-    while (WiFi.status() != WL_CONNECTED && attempts < 20) {
+    dnsServer.setTTL(3600);
+    dnsServer.start(53, "*", apIP);
+}
+
+void WifiSetup::setupWiFiSTA(const String& ssid, const String& pass){
+    WiFi.begin(ssid.c_str(), pass.c_str());
+
+    int retry = 20; // 10 detik timeout
+    while (WiFi.status() != WL_CONNECTED && retry > 0) {
+        retry--;
         delay(500);
-        Serial.print(".");
-        attempts++;
     }
     
-    if (WiFi.status() == WL_CONNECTED) {
-        Serial.println("\nPrimary WiFi connected!");
-        Serial.print("IP address: ");
-        Serial.println(WiFi.localIP());
-        return;
-    }
-    
-    // If primary fails and fallback exists, try fallback
-    if (has_fallback) {
-        Serial.println("\nPrimary WiFi failed, trying fallback...");
-        WiFi.begin(fallback_ssid, fallback_password);
-        Serial.print("Connecting to fallback WiFi: ");
-        Serial.println(fallback_ssid);
-        
-        attempts = 0;
-        while (WiFi.status() != WL_CONNECTED && attempts < 20) {
-            delay(500);
-            Serial.print(".");
-            attempts++;
-        }
-        
-        if (WiFi.status() == WL_CONNECTED) {
-            Serial.println("\nFallback WiFi connected!");
-            Serial.print("IP address: ");
-            Serial.println(WiFi.localIP());
-        } else {
-            Serial.println("\nBoth WiFi networks failed to connect!");
-        }
-    } else {
-        Serial.println("\nWiFi connection failed!");
+    if (WiFi.status() != WL_CONNECTED && retry == 0) {
+        mode = false;
+        // connectAP();
+    } else if(WiFi.status() == WL_CONNECTED){
+        mode = true;
     }
 }
 
-bool WiFiSetup::isConnected() {
-    return WiFi.status() == WL_CONNECTED;
-}
-
-void WiFiSetup::disconnect(){
+void WifiSetup::connectAP(){
     WiFi.disconnect();
+    WiFi.mode(WIFI_AP);
+}
+
+void WifiSetup::connectSTA(){
+    WiFi.disconnect();
+    // WiFi.softAPdisconnect(true);
+    WiFi.mode(WIFI_STA);
+}
+
+void WifiSetup::disconnectAP(){
+    if (WiFi.getMode() == WIFI_AP || WiFi.getMode() == WIFI_AP_STA) {
+        WiFi.softAPdisconnect(true);
+        dnsServer.stop();
+    }
+}
+
+void WifiSetup::disconnectSTA(){
+    if (WiFi.getMode() == WIFI_STA || WiFi.getMode() == WIFI_AP_STA) {
+        WiFi.disconnect(true);
+    }
+}
+
+void WifiSetup::loopDns() {
+    if (WiFi.getMode() == WIFI_AP || WiFi.getMode() == WIFI_AP_STA) {
+        dnsServer.processNextRequest();
+    }
+}
+
+void WifiSetup::disconnect(){
+    WiFi.disconnect(true);
+    if (WiFi.getMode() == WIFI_AP || WiFi.getMode() == WIFI_AP_STA) {
+       dnsServer.stop();
+    }
 }

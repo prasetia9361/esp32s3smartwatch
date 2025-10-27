@@ -1,22 +1,28 @@
-// wifi_setup.h
-#ifndef WIFI_SETUP_H
-#define WIFI_SETUP_H
+#pragma once
+#include <DNSServer.h>
+#include <WiFi.h>
+class WifiSetup {
+   private:
+    DNSServer dnsServer;
 
-#include <Arduino.h>
+    const char *ssid1 = "KiBo Alarm";
+    const char *password1 = "kibolab123";
+    bool mode = false;
+    String macAddress = WiFi.macAddress();
 
-class WiFiSetup {
-public:
-    WiFiSetup(const char* ssid, const char* password);
-    WiFiSetup(const char* ssid, const char* password, const char* fallback_ssid, const char* fallback_password);
-    void connect();
-    bool isConnected();
+   public:
+    // void begin();
+    WifiSetup();
+    // void begin();
+    void setupWiFiAP();
+    void loopDns();
+    void setupWiFiSTA(const String& ssid, const String& pass);
+    void connectAP();
+    void connectSTA();
+    // String getMac() { return macAddress; }
+    void disconnectAP();
+    void disconnectSTA();
+    bool isConnected() { return mode; }
+    bool reconnect() { return WiFi.reconnect(); }
     void disconnect();
-private:
-    const char* ssid;
-    const char* password;
-    const char* fallback_ssid;
-    const char* fallback_password;
-    bool has_fallback;
 };
-
-#endif

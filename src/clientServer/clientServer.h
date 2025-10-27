@@ -21,6 +21,7 @@ class clientServer {
     void upload();
     void delet();
     void list();
+    void notFound();
     /* data */
    public:
     clientServer() : server(80){}
