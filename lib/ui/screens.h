@@ -14,7 +14,6 @@ typedef struct _objects_t {
     lv_obj_t *audioo_1;
     lv_obj_t *alarm_1;
     lv_obj_t *date_time;
-    lv_obj_t *iwayat_hidrasi;
     lv_obj_t *hasilhidrasi;
     lv_obj_t *submenuwifi;
     lv_obj_t *submenuhotspot;
@@ -26,7 +25,6 @@ typedef struct _objects_t {
     lv_obj_t *button_background_1;
     lv_obj_t *button_date_time;
     lv_obj_t *button_date_time_1;
-    lv_obj_t *button_date_time_2;
     lv_obj_t *button_healty_1;
     lv_obj_t *button_lock_1;
     lv_obj_t *button_setting_1;
@@ -84,8 +82,6 @@ typedef struct _objects_t {
     lv_obj_t *obj43;
     lv_obj_t *obj44;
     lv_obj_t *obj45;
-    lv_obj_t *obj46;
-    lv_obj_t *obj47;
     lv_obj_t *obj5;
     lv_obj_t *obj6;
     lv_obj_t *obj7;
@@ -107,14 +103,13 @@ enum ScreensEnum {
     SCREEN_ID_AUDIOO_1 = 4,
     SCREEN_ID_ALARM_1 = 5,
     SCREEN_ID_DATE_TIME = 6,
-    SCREEN_ID_IWAYAT_HIDRASI = 7,
-    SCREEN_ID_HASILHIDRASI = 8,
-    SCREEN_ID_SUBMENUWIFI = 9,
-    SCREEN_ID_SUBMENUHOTSPOT = 10,
-    SCREEN_ID_SUB_MNEU_DSIPLAY_1 = 11,
-    SCREEN_ID_HEALTY_1 = 12,
-    SCREEN_ID_HEALTY_2 = 13,
-    SCREEN_ID_HEADER_INFO = 14,
+    SCREEN_ID_HASILHIDRASI = 7,
+    SCREEN_ID_SUBMENUWIFI = 8,
+    SCREEN_ID_SUBMENUHOTSPOT = 9,
+    SCREEN_ID_SUB_MNEU_DSIPLAY_1 = 10,
+    SCREEN_ID_HEALTY_1 = 11,
+    SCREEN_ID_HEALTY_2 = 12,
+    SCREEN_ID_HEADER_INFO = 13,
 };
 
 void create_screen_main();
@@ -134,9 +129,6 @@ void tick_screen_alarm_1();
 
 void create_screen_date_time();
 void tick_screen_date_time();
-
-void create_screen_iwayat_hidrasi();
-void tick_screen_iwayat_hidrasi();
 
 void create_screen_hasilhidrasi();
 void tick_screen_hasilhidrasi();

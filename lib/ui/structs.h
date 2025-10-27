@@ -20,3 +20,4 @@ using namespace eez;
 #endif
 
 #endif /*EEZ_LVGL_UI_STRUCTS_H*/
+ /*EEZ_LVGL_UI_STRUCTS_H*/
