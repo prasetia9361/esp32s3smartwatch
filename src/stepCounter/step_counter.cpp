@@ -43,12 +43,6 @@ void StepCounter::start() {
     isActive = true;
     canDetect = true;
     lastStepTime = millis();
-    // currentState = STATE_COUNTING;
-    
-    // Update button state to checked
-    // lv_obj_add_state(button_walk, LV_STATE_CHECKED);
-    
-    Serial.println("Step counting started");
 }
 
 void StepCounter::stop() {
@@ -56,9 +50,6 @@ void StepCounter::stop() {
     // currentState = STATE_STOPPED;
     
     // Update button state to unchecked
-    
-    Serial.println("Step counting stopped");
-    Serial.printf("Final step count: %d\n", stepCount);
 }
 
 void StepCounter::reset() {
@@ -73,19 +64,10 @@ void StepCounter::reset() {
     
     // Update UI
     updateUI();
-    
-    Serial.println("Step counter reset");
 }
 
 void StepCounter::update() {
-    if (!qmi || !isActive) {
-        Serial.println("qmi false");
-    }else
-    {
-        /* code */
-
-     
-    
+    if (isActive) {
         // Reset detection cooldown
         if (!canDetect && millis() > timeBuff + STEP_COOLDOWN) {
             canDetect = true;
@@ -112,8 +94,6 @@ void StepCounter::update() {
                     if (soundEnabled && stepCount < 30) {
                         playStepSound();
                     }
-                    
-                    Serial.printf("Step detected! Count: %d\n", stepCount);
                 }
                 
                 lastMagnitude = magnitude;
@@ -154,7 +134,6 @@ void StepCounter::handleButton(int state) {
         switch (currentState) {
             case STATE_STOPPED:
                 stop();
-                Serial.println("Button pressed: Stopping step counting");
                 break;
 
                 
@@ -162,7 +141,6 @@ void StepCounter::handleButton(int state) {
 
                 reset();  // Reset count to 0
                 start();  // Start counting
-                Serial.println("Button pressed: Starting step counting");
                 break;
         }
     }

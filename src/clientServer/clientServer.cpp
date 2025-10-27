@@ -14,8 +14,6 @@ void clientServer::begin() {
     // return true;
 }
 void clientServer::indexHtml() {
-    // Serial.println(F("[Webserver] Setting up page index"));
-
     const String localUrl = "http://192.168.7.2";
     // Handler untuk captive portal yang mengarahkan ke halaman utama
     auto redirectRoot = [this, localUrl](AsyncWebServerRequest *request) {
@@ -89,7 +87,7 @@ void clientServer::delet() {
 void clientServer::list() {
     server.on("/list", HTTP_GET, [this](AsyncWebServerRequest *request) {
         AsyncWebServerResponse *response = request->beginResponse(
-            200, "application/json", memory.listDir("/",  1));  // setter
+            200, "application/json", memory.listDir("/",  0));  // setter
         request->send(response);
     });
 }
@@ -98,12 +96,5 @@ void clientServer::notFound() {
     const String localUrl = "http://192.168.7.2";
     server.onNotFound([this, localUrl](AsyncWebServerRequest *request) {
         request->redirect(localUrl);
-        Serial.print("onnotfound ");
-        Serial.print(
-            request->host());  // This gives some insight into whatever was
-                               // being requested on the serial monitor
-        Serial.print(" ");
-        Serial.print(request->url());
-        Serial.print(" sent redirect to " + localUrl + "\n");
     });
 }

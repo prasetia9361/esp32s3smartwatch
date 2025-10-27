@@ -1,9 +1,9 @@
 {
   "navigation": {
-    "selectedUserPageObject": "[smartwatch.eez-project]:/userPages/0",
+    "selectedUserPageObject": "[smartwatch.eez-project]:/userPages/8",
     "selectedGlobalVariableObject": "[smartwatch.eez-project]:/variables/globalVariables/19",
     "selectedFontObject": "[smartwatch.eez-project]:/fonts/3",
-    "selectedBitmapObject": "[smartwatch.eez-project]:/bitmaps/8",
+    "selectedBitmapObject": "[smartwatch.eez-project]:/bitmaps/13",
     "subnavigationSelectedItems": {
       "variables-tab/sub-navigation/selected-item": "Actions"
     }
@@ -185,17 +185,16 @@
               "type": "tabset",
               "id": "EDITORS",
               "weight": 57.487008166295475,
-              "selected": 1,
               "enableDeleteWhenEmpty": false,
               "enableClose": false,
               "children": [
                 {
                   "type": "tab",
                   "id": "#52cd7d9e-d332-463c-a754-1e292e67026e",
-                  "name": "hasilhidrasi",
+                  "name": "healty_2",
                   "component": "editor",
                   "config": {
-                    "objectPath": "[smartwatch.eez-project]:/userPages/10",
+                    "objectPath": "[smartwatch.eez-project]:/userPages/8",
                     "permanent": false
                   },
                   "icon": "svg:page"
@@ -223,8 +222,7 @@
                   },
                   "icon": "material:settings"
                 }
-              ],
-              "active": true
+              ]
             },
             {
               "type": "row",
@@ -244,7 +242,8 @@
                       "enableClose": false,
                       "icon": "svg:properties"
                     }
-                  ]
+                  ],
+                  "active": true
                 },
                 {
                   "type": "tabset",
@@ -945,7 +944,12 @@
     "[smartwatch.eez-project]:/userPages/0[flow-state]": {
       "selection": {
         "0": {
-          "3": {}
+          "1": {
+            "2": {
+              "$selected": true
+            }
+          },
+          "2": {}
         },
         "2": {}
       },
@@ -1104,8 +1108,8 @@
       },
       "transform": {
         "translate": {
-          "x": -274.6600000000001,
-          "y": -157.73749999999978
+          "x": -350.6600000000001,
+          "y": -90.73749999999978
         },
         "scale": 1
       },
@@ -1164,7 +1168,11 @@
     "[smartwatch.eez-project]:/userPages/8[flow-state]": {
       "selection": {
         "0": {
-          "2": {},
+          "2": {
+            "5": {
+              "$selected": true
+            }
+          },
           "3": {},
           "7": {}
         }
@@ -1269,7 +1277,8 @@
   "lvglExpandedPropertiesGroup": [
     "TEXT",
     "MISCELLANEOUS",
-    "POSITION AND SIZE"
+    "POSITION AND SIZE",
+    "BACKGROUND"
   ],
   "showInactiveFlowsInDebugger": true
 }

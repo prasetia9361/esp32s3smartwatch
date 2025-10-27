@@ -11,16 +11,16 @@ typedef struct _objects_t {
     lv_obj_t *main;
     lv_obj_t *menu_1;
     lv_obj_t *setting_1;
-    lv_obj_t *sub_mneu_dsiplay_1;
-    lv_obj_t *healty_1;
     lv_obj_t *audioo_1;
     lv_obj_t *alarm_1;
     lv_obj_t *date_time;
-    lv_obj_t *healty_2;
     lv_obj_t *iwayat_hidrasi;
     lv_obj_t *hasilhidrasi;
     lv_obj_t *submenuwifi;
     lv_obj_t *submenuhotspot;
+    lv_obj_t *sub_mneu_dsiplay_1;
+    lv_obj_t *healty_1;
+    lv_obj_t *healty_2;
     lv_obj_t *button_alarm_1;
     lv_obj_t *button_audio_1;
     lv_obj_t *button_background_1;
@@ -86,11 +86,7 @@ typedef struct _objects_t {
     lv_obj_t *obj45;
     lv_obj_t *obj46;
     lv_obj_t *obj47;
-    lv_obj_t *obj48;
-    lv_obj_t *obj49;
     lv_obj_t *obj5;
-    lv_obj_t *obj50;
-    lv_obj_t *obj51;
     lv_obj_t *obj6;
     lv_obj_t *obj7;
     lv_obj_t *obj7__obj10;
@@ -108,16 +104,16 @@ enum ScreensEnum {
     SCREEN_ID_MAIN = 1,
     SCREEN_ID_MENU_1 = 2,
     SCREEN_ID_SETTING_1 = 3,
-    SCREEN_ID_SUB_MNEU_DSIPLAY_1 = 4,
-    SCREEN_ID_HEALTY_1 = 5,
-    SCREEN_ID_AUDIOO_1 = 6,
-    SCREEN_ID_ALARM_1 = 7,
-    SCREEN_ID_DATE_TIME = 8,
-    SCREEN_ID_HEALTY_2 = 9,
-    SCREEN_ID_IWAYAT_HIDRASI = 10,
-    SCREEN_ID_HASILHIDRASI = 11,
-    SCREEN_ID_SUBMENUWIFI = 12,
-    SCREEN_ID_SUBMENUHOTSPOT = 13,
+    SCREEN_ID_AUDIOO_1 = 4,
+    SCREEN_ID_ALARM_1 = 5,
+    SCREEN_ID_DATE_TIME = 6,
+    SCREEN_ID_IWAYAT_HIDRASI = 7,
+    SCREEN_ID_HASILHIDRASI = 8,
+    SCREEN_ID_SUBMENUWIFI = 9,
+    SCREEN_ID_SUBMENUHOTSPOT = 10,
+    SCREEN_ID_SUB_MNEU_DSIPLAY_1 = 11,
+    SCREEN_ID_HEALTY_1 = 12,
+    SCREEN_ID_HEALTY_2 = 13,
     SCREEN_ID_HEADER_INFO = 14,
 };
 
@@ -130,12 +126,6 @@ void tick_screen_menu_1();
 void create_screen_setting_1();
 void tick_screen_setting_1();
 
-void create_screen_sub_mneu_dsiplay_1();
-void tick_screen_sub_mneu_dsiplay_1();
-
-void create_screen_healty_1();
-void tick_screen_healty_1();
-
 void create_screen_audioo_1();
 void tick_screen_audioo_1();
 
@@ -144,9 +134,6 @@ void tick_screen_alarm_1();
 
 void create_screen_date_time();
 void tick_screen_date_time();
-
-void create_screen_healty_2();
-void tick_screen_healty_2();
 
 void create_screen_iwayat_hidrasi();
 void tick_screen_iwayat_hidrasi();
@@ -159,6 +146,15 @@ void tick_screen_submenuwifi();
 
 void create_screen_submenuhotspot();
 void tick_screen_submenuhotspot();
+
+void create_screen_sub_mneu_dsiplay_1();
+void tick_screen_sub_mneu_dsiplay_1();
+
+void create_screen_healty_1();
+void tick_screen_healty_1();
+
+void create_screen_healty_2();
+void tick_screen_healty_2();
 
 void create_user_widget_header_info(lv_obj_t *parent_obj, void *flowState, int startWidgetIndex);
 void tick_user_widget_header_info(void *flowState, int startWidgetIndex);

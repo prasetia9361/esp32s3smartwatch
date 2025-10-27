@@ -1,7 +1,7 @@
 #ifndef STEP_COUNTER_H
 #define STEP_COUNTER_H
 
-#include <Arduino.h>
+// #include <Arduino.h>
 // #include "lvgl.h"
 #include "SensorQMI8658.hpp"
 // #include "qmi8658_sensor.h"

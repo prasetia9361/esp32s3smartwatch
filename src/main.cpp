@@ -19,7 +19,6 @@
 #include "pin_config.h"
 #include "ui.h"
 #include "vars.h"
-//"http://192.168.7.1"
 
 // Tambahkan deklarasi Mutex di bagian global
 SemaphoreHandle_t i2cMutex;
@@ -41,6 +40,7 @@ StepCounter *stepCounter;
 
 void applyWiFiMode(void *param);
 void applySensor(void *param);
+void displayTick(void *param);
 
 extern bool switchWiFiAP();
 extern bool switchWiFi();
@@ -157,7 +157,7 @@ void updateTimeDisplay() {
 
 void setup() {
   USBSerial.begin(115200);
-  delay(2000);
+  // delay(1000);
 
   memory = new Memory();
   stepCounter = new StepCounter();
@@ -179,14 +179,6 @@ void setup() {
       USBSerial.println("Hardware initialization failed!");
       delay(100);
   }
-  
-  // if (!RTC_TIME.begin(PCF85063_SLAVE_ADDRESS, IIC_SDA, IIC_SCL))
-  // {
-    
-  //   USBSerial.println("RTC fail initialized");
-  // }
-  // USBSerial.println("RTC initialized");
-  // RTC_TIME.iso8601();
 
   TaskHandle_t wifiTaskHandle;
   xTaskCreatePinnedToCore(
@@ -197,6 +189,17 @@ void setup() {
       1,              /* Priority of the task */
       &wifiTaskHandle,/* Task handle. */
       0);             /* Core where the task should run */ 
+
+  TaskHandle_t displayTaskHandle;
+
+  xTaskCreatePinnedToCore(
+      displayTick,   /* Function to implement the task */
+      "displayTask",     /* Name of the task */
+      4096,           /* Stack size in words */
+      NULL,           /* Task input parameter */
+      1,              /* Priority of the task */
+      &displayTaskHandle,/* Task handle. */
+      1);             /* Core where the task should run */
 
   TaskHandle_t sensorTaskHandle;
   xTaskCreatePinnedToCore(
@@ -210,9 +213,8 @@ void setup() {
 }
 
 void loop() {
-  lvgl_handler();
-  ui_tick();
-  vTaskDelay(5);
+
+  vTaskDelay(1000);
 }
 
 void applyWiFiMode(void *param){
@@ -457,7 +459,21 @@ void applySensor(void *param){
       xSemaphoreGive(i2cMutex);
     }
     
-  vTaskDelay(5);
+  vTaskDelay(10);
   }
   
+}
+
+void displayTick(void *param){
+  while (true)
+  {
+    // Ambil Mutex sebelum blok operasi I2C
+    // if (xSemaphoreTake(i2cMutex, portMAX_DELAY) == pdTRUE) {
+      lvgl_handler();
+      ui_tick();
+      // Lepaskan Mutex setelah selesai
+    //   xSemaphoreGive(i2cMutex);
+    // }
+    vTaskDelay(10);
+  }
 }
