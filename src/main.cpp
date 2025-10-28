@@ -19,14 +19,11 @@
 #include "pin_config.h"
 #include "ui.h"
 #include "vars.h"
-//"http://192.168.7.1"
 
-// Tambahkan deklarasi Mutex di bagian global
 SemaphoreHandle_t i2cMutex;
 
 HWCDC USBSerial;
 WifiSetup *wifiSetup;
-// WiFiSetup wifiSetup(WIFI_SSID, WIFI_PASSWORD, WIFI_FALLBACK_SSID, WIFI_FALLBACK_PASSWORD);
 NTPSetup ntpSetup(NTP_TIMEZONE, NTP_SERVER1, NTP_SERVER2, NTP_SERVER3);
 // static Communication comm; 
 Memory *memory;
@@ -67,9 +64,6 @@ bool wifi = false;
 bool lastSaveDate = false;
 String HH_MM = "21:00";
 String CURRENT_DATE = "TUE 18/10/2025";
-
-// static Communication comm; 
-// static Control control;
 
 bool initializeHardware(){
   bool isSDCard = memory->begin(SDMMC_CLK, SDMMC_CMD, SDMMC_DATA);
@@ -123,21 +117,6 @@ void updateTimeDisplay() {
     if (ntpSetup.getLocalTime(&timeinfo)) {
         // Convert to 12-hour format
         int hour12 = timeinfo.tm_hour;
-        // if (hour12 == 0) {
-        //     hour12 = 12; // 12 AM
-        // } else if (hour12 > 12) {
-        //     hour12 -= 12; // PM hours
-        // }
-        // update label di lvgl
-        // Update hour label (12-hour format)
-        // char hourStr[3];
-        // snprintf(hourStr, sizeof(hourStr), "%02d", hour12);
-        // // lv_label_set_text(objects.label_hh, hourStr);
-        
-        // // Update minute label
-        // char minStr[3];
-        // snprintf(minStr, sizeof(minStr), "%02d", timeinfo.tm_min);
-        // lv_label_set_text(objects.label_mm, minStr);
 
         char hourMinStr[6];
         snprintf(hourMinStr, sizeof(hourMinStr), "%02d:%02d", hour12, timeinfo.tm_min);
@@ -153,14 +132,6 @@ void updateTimeDisplay() {
                 timeinfo.tm_mon, 
                 timeinfo.tm_year);
         CURRENT_DATE = String(dateStr);
-        
-        // snprintf(dateStr, sizeof(dateStr), "%s - %d", 
-        //         weekdays[timeinfo.tm_wday], 
-        //         timeinfo.tm_mday);
-        // lv_label_set_text(objects.label_date, dateStr);
-        
-        // USBSerial.printf("Time updated: %s %02d:%02d\n", 
-        //                 weekdays[timeinfo.tm_wday], hour12, timeinfo.tm_min);
     }
 }
 
@@ -186,25 +157,10 @@ void setup() {
       delay(100);
   }
 
-  // Inisialisasi SD Card di sini, SEBELUM task dimulai
-  // while (!memory->begin(USBSerial))
-  // {
-  //   USBSerial.println("Memory initialization failed! Cek koneksi SD Card.");
-  //   delay(1000);
-  // }
-
   lvgl_init();
   USBSerial.println("LVGL initialized");
   ui_init();
   USBSerial.println("UI initialized");
-  
-  // if (!RTC_TIME.begin(PCF85063_SLAVE_ADDRESS, IIC_SDA, IIC_SCL))
-  // {
-    
-  //   USBSerial.println("RTC fail initialized");
-  // }
-  // USBSerial.println("RTC initialized");
-  // RTC_TIME.iso8601();
 
   TaskHandle_t wifiTaskHandle;
   xTaskCreatePinnedToCore(
@@ -236,31 +192,11 @@ void loop() {
 void applyWiFiMode(void *param){
   bool wifiAP = false;
 
-  // Pindahkan inisialisasi memori dari sini ke setup()
-  /*
-  while (!memory->begin(USBSerial))
-  {
-    USBSerial.println("Memory initialization failed!");
-    delay(100);
-  }
-  */
-
   if (!STORAGE.init())
   {
       USBSerial.println(F("[Storage] init failed"));
   }
-  // wifiSetup.connect();
-  
-  // // Initialize NTP if WiFi is connected
-  // if (wifiSetup.isConnected()) {
-  //     // Set custom update interval if needed
-  //     ntpSetup.setUpdateInterval(NTP_UPDATE_INTERVAL);
-  //     ntpSetup.initialize();
-  //     isNtp = true;
-  // } else {
-  //     USBSerial.println("WiFi not connected - NTP initialization skipped");
-  //     isNtp = false;
-  // }
+
   while (true)
   {
     if (isWifiAP != wifiAP)
@@ -320,17 +256,6 @@ void applyWiFiMode(void *param){
           lastTimeUpdate = currentTime;
       }
     }
-    
-
-    // static uint32_t lastCheck = 0;
-    // if (millis() - lastCheck > 1000){
-    //   lastCheck = millis();
-    //   HH_MM = RTC_TIME.printTime();
-    //   USBSerial.println(HH_MM);
-    // }
-
-    // comm.loop();
-    // control.loop();
 
     vTaskDelay(10);
     
@@ -444,11 +369,6 @@ void applySensor(void *param){
           snprintf(buf, sizeof(buf), "%02d:%02d", dt.hour, dt.minute);
           // RTCHHMM = RTC_TIME.printTime();
           setTimeHHMM(buf);
-          // USBSerial.println(HH_MM);
-
-          // char bufDate[11]; // "DD/MM/YYYY" + null
-          // snprintf(bufDate, sizeof(bufDate), "%02d/%02d/%04d", dt.day, dt.month, dt.year);
-          // RTCDATE = RTC_TIME.printDate();
           currentDay = dt.week;
           const char* weekdays[] = {"SUN", "MON", "TUE", "WED", "THU", "FRI", "SAT"};
           char dateStr[18];
