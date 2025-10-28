@@ -1,11 +1,11 @@
 {
   "navigation": {
-    "selectedUserPageObject": "[smartwatch.eez-project]:/userPages/0",
-    "selectedGlobalVariableObject": "[smartwatch.eez-project]:/variables/globalVariables/19",
+    "selectedUserPageObject": "[smartwatch.eez-project]:/userPages/2",
+    "selectedGlobalVariableObject": "[smartwatch.eez-project]:/variables/globalVariables/8",
     "selectedFontObject": "[smartwatch.eez-project]:/fonts/3",
     "selectedBitmapObject": "[smartwatch.eez-project]:/bitmaps/1",
     "subnavigationSelectedItems": {
-      "variables-tab/sub-navigation/selected-item": "Local"
+      "variables-tab/sub-navigation/selected-item": "Global"
     }
   },
   "layoutModel": {
@@ -67,6 +67,7 @@
           {
             "type": "border",
             "selected": 0,
+            "size": 122.5,
             "location": "bottom",
             "children": [
               {
@@ -150,7 +151,7 @@
                 {
                   "type": "tabset",
                   "id": "#1d9ecba4-690f-4f60-859f-ff602ad4ad9e",
-                  "weight": 0.9454976783795294,
+                  "weight": 0.715483530674233,
                   "enableClose": false,
                   "children": [
                     {
@@ -166,7 +167,7 @@
                 {
                   "type": "tabset",
                   "id": "#a44ebcbd-12a1-4a56-bb3a-9b15fd74aedf",
-                  "weight": 0.5377237981305379,
+                  "weight": 0.7677379458358343,
                   "enableClose": false,
                   "children": [
                     {
@@ -185,17 +186,16 @@
               "type": "tabset",
               "id": "EDITORS",
               "weight": 57.487008166295475,
-              "selected": 1,
               "enableDeleteWhenEmpty": false,
               "enableClose": false,
               "children": [
                 {
                   "type": "tab",
-                  "id": "#53814f52-9394-44f4-af7d-5969b9ec89e5",
-                  "name": "menu_1",
+                  "id": "#9335162c-03ad-4feb-a652-2fa89043e5f7",
+                  "name": "setting_1",
                   "component": "editor",
                   "config": {
-                    "objectPath": "[smartwatch.eez-project]:/userPages/1",
+                    "objectPath": "[smartwatch.eez-project]:/userPages/2",
                     "permanent": false
                   },
                   "icon": "svg:page"
@@ -223,7 +223,8 @@
                   },
                   "icon": "material:settings"
                 }
-              ]
+              ],
+              "active": true
             },
             {
               "type": "row",
@@ -243,8 +244,7 @@
                       "enableClose": false,
                       "icon": "svg:properties"
                     }
-                  ],
-                  "active": true
+                  ]
                 },
                 {
                   "type": "tabset",
@@ -1062,8 +1062,8 @@
       },
       "transform": {
         "translate": {
-          "x": -406.3930735930736,
-          "y": -290.99264069264075
+          "x": -463.3930735930736,
+          "y": -233.99264069264075
         },
         "scale": 1
       },
@@ -1197,10 +1197,8 @@
     "[smartwatch.eez-project]:/userPages/10[flow-state]": {
       "selection": {
         "0": {
-          "1": {
-            "$selected": true
-          },
-          "4": {}
+          "1": {},
+          "3": {}
         }
       },
       "transform": {

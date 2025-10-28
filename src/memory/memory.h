@@ -1,15 +1,15 @@
 #ifndef MEMORY_H
 #define MEMORY_H
 
-#include <Arduino.h>
-#include <FS.h>
 #include <SD_MMC.h>
-
+#include <SPI.h>
+#include <FS.h>
 class Memory {
 public:
     Memory();
-    bool begin(Stream& debugStream);
+    bool begin(int clkPin, int cmdPin, int dataPin);
     String listDir(const char *dirname, uint8_t levels);
+    String listDirJson(const char *dirname); // <-- Tambahkan fungsi baru ini
     String getCardInfo();
 
     // Write complete buffer to a file (overwrites existing)

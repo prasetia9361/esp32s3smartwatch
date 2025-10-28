@@ -11,7 +11,7 @@
 class Memory;
 class clientServer {
    private:
-    Memory memory;
+    Memory *_memory;
     AsyncWebServer server;
     String fileNameDelete;
     String fileNameOpening;
@@ -24,7 +24,7 @@ class clientServer {
     void notFound();
     /* data */
    public:
-    clientServer() : server(80){}
+    clientServer(Memory *memory) : _memory(memory), server(80) {}
     void begin();
     String getFileOpening() { return fileNameOpening; };
     // void getDataRequest();

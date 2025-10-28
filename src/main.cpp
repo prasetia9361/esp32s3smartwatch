@@ -25,12 +25,12 @@
 SemaphoreHandle_t i2cMutex;
 
 HWCDC USBSerial;
-WifiSetup wifiSetup;
+WifiSetup *wifiSetup;
 // WiFiSetup wifiSetup(WIFI_SSID, WIFI_PASSWORD, WIFI_FALLBACK_SSID, WIFI_FALLBACK_PASSWORD);
 NTPSetup ntpSetup(NTP_TIMEZONE, NTP_SERVER1, NTP_SERVER2, NTP_SERVER3);
 // static Communication comm; 
 Memory *memory;
-clientServer webServer;
+clientServer *webServer;
 SensorPCF85063 rtc;
 
 XPowersPMU power;
@@ -72,6 +72,15 @@ String CURRENT_DATE = "TUE 18/10/2025";
 // static Control control;
 
 bool initializeHardware(){
+  bool isSDCard = memory->begin(SDMMC_CLK, SDMMC_CMD, SDMMC_DATA);
+  if (!isSDCard)
+  {
+    USBSerial.println("SD Card initialization failed!");
+    return false;
+  }else{
+    USBSerial.println(memory->getCardInfo());
+  }
+  
   Wire.begin(IIC_SDA,IIC_SCL);
   bool powerResult = power.begin(Wire, AXP2101_SLAVE_ADDRESS, IIC_SDA, IIC_SCL);
   if (!powerResult)
@@ -157,9 +166,11 @@ void updateTimeDisplay() {
 
 void setup() {
   USBSerial.begin(115200);
-  delay(2000);
+  delay(1000);
 
+  wifiSetup = new WifiSetup();
   memory = new Memory();
+  webServer = new clientServer(memory);
   stepCounter = new StepCounter();
   battery = new BatteryMonitor();
 
@@ -169,16 +180,23 @@ void setup() {
       USBSerial.println("Failed to create I2C Mutex!");
   }
 
-  lvgl_init();
-  USBSerial.println("LVGL initialized");
-  ui_init();
-  USBSerial.println("UI initialized");
-
     // Initialize hardware
   while (!initializeHardware()) {
       USBSerial.println("Hardware initialization failed!");
       delay(100);
   }
+
+  // Inisialisasi SD Card di sini, SEBELUM task dimulai
+  // while (!memory->begin(USBSerial))
+  // {
+  //   USBSerial.println("Memory initialization failed! Cek koneksi SD Card.");
+  //   delay(1000);
+  // }
+
+  lvgl_init();
+  USBSerial.println("LVGL initialized");
+  ui_init();
+  USBSerial.println("UI initialized");
   
   // if (!RTC_TIME.begin(PCF85063_SLAVE_ADDRESS, IIC_SDA, IIC_SCL))
   // {
@@ -218,11 +236,14 @@ void loop() {
 void applyWiFiMode(void *param){
   bool wifiAP = false;
 
+  // Pindahkan inisialisasi memori dari sini ke setup()
+  /*
   while (!memory->begin(USBSerial))
   {
     USBSerial.println("Memory initialization failed!");
     delay(100);
   }
+  */
 
   if (!STORAGE.init())
   {
@@ -247,18 +268,18 @@ void applyWiFiMode(void *param){
       wifiAP = isWifiAP;
 
       if (wifiAP){
-        wifiSetup.connectAP();
-        wifiSetup.setupWiFiAP();
-        webServer.begin();
+        wifiSetup->connectAP();
+        wifiSetup->setupWiFiAP();
+        webServer->begin();
       }
       else{
-        wifiSetup.disconnectAP();
+        wifiSetup->disconnectAP();
         // comm.stop();
       }
     }
 
     if(isWifiAP){
-      wifiSetup.loopDns();
+      wifiSetup->loopDns();
     }
 
     if (isWifi != wifi)
@@ -267,9 +288,9 @@ void applyWiFiMode(void *param){
 
       if (wifi)
       {
-        wifiSetup.connectSTA();
-        wifiSetup.setupWiFiSTA(WIFI_SSID, WIFI_PASSWORD);
-        if (wifiSetup.isConnected()) {
+        wifiSetup->connectSTA();
+        wifiSetup->setupWiFiSTA(WIFI_SSID, WIFI_PASSWORD);
+        if (wifiSetup->isConnected()) {
             // Set custom update interval if needed
             ntpSetup.setUpdateInterval(NTP_UPDATE_INTERVAL);
             ntpSetup.initialize();
@@ -278,9 +299,11 @@ void applyWiFiMode(void *param){
             USBSerial.println("WiFi not connected - NTP initialization skipped");
             isNtp = false;
         }
+
+        USBSerial.println(memory->listDir("/", 0));
       }else
       {
-        wifiSetup.disconnectSTA();
+        wifiSetup->disconnectSTA();
         isNtp = false;
       }
     }

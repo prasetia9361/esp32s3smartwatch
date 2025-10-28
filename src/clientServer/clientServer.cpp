@@ -1,6 +1,5 @@
 #include "clientServer.h"
 #include <WiFi.h>
-// comunication::comunication(dataSpiffs &Spiffs) : _Spiffs(Spiffs) {}
 
 void clientServer::begin() {
     server.begin();
@@ -54,13 +53,12 @@ void clientServer::upload() {
     server.on(
         "/upload", HTTP_POST,
         [this](AsyncWebServerRequest *request) {
-            // request->send(200, "text/plain", "File uploaded successfully");
             request->send(SPIFFS, "/upload.html", "text/html");
         },
         [this](AsyncWebServerRequest *request, String filename, size_t index,
                uint8_t *data, size_t len, bool final) {
             // setter
-            memory.writeFile(("/" + filename).c_str(), data, len);
+            _memory->writeFile(("/" + filename).c_str(), data, len);
         });
 }
 void clientServer::delet() {
@@ -70,8 +68,8 @@ void clientServer::delet() {
         if (request->hasParam("filename")) {
             fileNameDelete = request->getParam("filename")->value();
             // seter
-            if (memory.fileExists(("/" + fileNameDelete).c_str())) {
-                memory.deleteFile(("/" + fileNameDelete).c_str());
+            if (_memory->fileExists(("/" + fileNameDelete).c_str())) {
+                _memory->deleteFile(("/" + fileNameDelete).c_str());
                 request->send(200, "text/plain",
                               "File " + fileNameDelete + " berhasil dihapus.");
             } else {
@@ -86,8 +84,9 @@ void clientServer::delet() {
 }
 void clientServer::list() {
     server.on("/list", HTTP_GET, [this](AsyncWebServerRequest *request) {
+        // Panggil fungsi baru yang mengembalikan format JSON
         AsyncWebServerResponse *response = request->beginResponse(
-            200, "application/json", memory.listDir("/",  0));  // setter
+            200, "application/json", _memory->listDirJson("/"));
         request->send(response);
     });
 }

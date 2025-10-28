@@ -1,43 +1,24 @@
-#include <Arduino.h>
-#include <Wire.h>
-#include <SPI.h>
-#include <FS.h>
-#include <SD_MMC.h>
-#include <stdio.h>  // Optional if not using printf
-#include "pin_config.h"
-#include "HWCDC.h"
 #include "memory.h"
 
-Memory::Memory() : _debugStream(nullptr), _isInitialized(false) {
+Memory::Memory() : _isInitialized(false) {
 }
 
-bool Memory::begin(Stream& debugStream) {
-    _debugStream = &debugStream;
+bool Memory::begin(int clkPin, int cmdPin, int dataPin) {
 
-    SD_MMC.setPins(SDMMC_CLK, SDMMC_CMD, SDMMC_DATA);
+    SD_MMC.setPins(clkPin, cmdPin, dataPin);
 
     if (!SD_MMC.begin("/sdcard", true)) {
-        if (_debugStream) {
-            _debugStream->println("Card Mount Failed");
-        }
         _isInitialized = false;
         return false;
     }
 
     uint8_t cardType = SD_MMC.cardType();
     if (cardType == CARD_NONE) {
-        if (_debugStream) {
-            _debugStream->println("No SD_MMC card attached");
-        }
         _isInitialized = false;
         return false;
     }
 
     _isInitialized = true;
-    if (_debugStream) {
-        _debugStream->println("SD Card initialized successfully.");
-        _debugStream->print(getCardInfo());
-    }
 
     return true;
 }
@@ -71,17 +52,12 @@ String Memory::listDir(const char *dirname, uint8_t levels) {
     }
 
     String dirContent = "Listing directory: " + String(dirname) + "\n";
-    if (_debugStream) {
-        _debugStream->println("Listing directory: " + String(dirname));
-    }
 
     File root = SD_MMC.open(dirname);
     if (!root) {
-        if (_debugStream) _debugStream->println("Failed to open directory");
         return "Failed to open directory\n";
     }
     if (!root.isDirectory()) {
-        if (_debugStream) _debugStream->println("Not a directory");
         return "Not a directory\n";
     }
 
@@ -89,14 +65,12 @@ String Memory::listDir(const char *dirname, uint8_t levels) {
     while (file) {
         if (file.isDirectory()) {
             String dirName = "  DIR : " + String(file.name()) + "\n";
-            if (_debugStream) _debugStream->print(dirName);
             dirContent += dirName;
             if (levels) {
                 dirContent += listDir(file.path(), levels - 1);
             }
         } else {
             String fileInfo = "  FILE: " + String(file.name()) + "  SIZE: " + String(file.size()) + "\n";
-            if (_debugStream) _debugStream->print(fileInfo);
             dirContent += fileInfo;
         }
         file = root.openNextFile();
@@ -104,10 +78,39 @@ String Memory::listDir(const char *dirname, uint8_t levels) {
     return dirContent;
 }
 
+String Memory::listDirJson(const char *dirname) {
+    if (!_isInitialized) {
+        return "[]"; // Kembalikan array JSON kosong jika tidak terinisialisasi
+    }
+
+    String json = "[";
+    bool firstFile = true;
+
+    File root = SD_MMC.open(dirname);
+    if (!root || !root.isDirectory()) {
+        return "[]"; // Kembalikan array JSON kosong jika direktori tidak ada
+    }
+
+    File file = root.openNextFile();
+    while (file) {
+        // Hanya proses file, abaikan direktori
+        if (!file.isDirectory()) {
+            if (!firstFile) {
+                json += ","; // Tambahkan koma sebelum elemen berikutnya
+            }
+            json += "\"" + String(file.name()) + "\"";
+            firstFile = false;
+        }
+        file = root.openNextFile();
+    }
+
+    json += "]";
+    return json;
+}
+
 // Write complete buffer to file (overwrite)
 bool Memory::writeFile(const char* path, const uint8_t* buf, size_t size) {
     if (!_isInitialized) {
-        if (_debugStream) _debugStream->println("writeFile: SD not initialized");
         return false;
     }
 
@@ -118,7 +121,6 @@ bool Memory::writeFile(const char* path, const uint8_t* buf, size_t size) {
 
     File file = SD_MMC.open(path, FILE_WRITE);
     if (!file) {
-        if (_debugStream) _debugStream->printf("writeFile: Failed to open %s\n", path);
         return false;
     }
 
@@ -126,18 +128,15 @@ bool Memory::writeFile(const char* path, const uint8_t* buf, size_t size) {
     file.close();
 
     if (written != size) {
-        if (_debugStream) _debugStream->printf("writeFile: Written %u of %u bytes to %s\n", (unsigned)written, (unsigned)size, path);
         return false;
     }
 
-    if (_debugStream) _debugStream->printf("writeFile: Wrote %u bytes to %s\n", (unsigned)written, path);
     return true;
 }
 
 // Append buffer to file (creates if not exist)
 bool Memory::appendFile(const char* path, const uint8_t* buf, size_t size) {
     if (!_isInitialized) {
-        if (_debugStream) _debugStream->println("appendFile: SD not initialized");
         return false;
     }
 
@@ -146,7 +145,6 @@ bool Memory::appendFile(const char* path, const uint8_t* buf, size_t size) {
         // Fallback: try FILE_WRITE (some cores map FILE_APPEND to FILE_WRITE)
         file = SD_MMC.open(path, FILE_WRITE);
         if (!file) {
-            if (_debugStream) _debugStream->printf("appendFile: Failed to open %s\n", path);
             return false;
         }
         // ensure we append
@@ -157,11 +155,9 @@ bool Memory::appendFile(const char* path, const uint8_t* buf, size_t size) {
     file.close();
 
     if (written != size) {
-        if (_debugStream) _debugStream->printf("appendFile: Written %u of %u bytes to %s\n", (unsigned)written, (unsigned)size, path);
         return false;
     }
 
-    if (_debugStream) _debugStream->printf("appendFile: Appended %u bytes to %s\n", (unsigned)written, path);
     return true;
 }
 
@@ -169,13 +165,11 @@ bool Memory::appendFile(const char* path, const uint8_t* buf, size_t size) {
 // If totalBytes == 0, writes until stream has no more data (may block).
 bool Memory::writeAudioFromStream(const char* path, Stream& src, size_t totalBytes, size_t chunkSize) {
     if (!_isInitialized) {
-        if (_debugStream) _debugStream->println("writeAudioFromStream: SD not initialized");
         return false;
     }
     if (chunkSize == 0) chunkSize = 1024;
     uint8_t *buf = (uint8_t*)malloc(chunkSize);
     if (!buf) {
-        if (_debugStream) _debugStream->println("writeAudioFromStream: malloc failed");
         return false;
     }
 
@@ -184,7 +178,6 @@ bool Memory::writeAudioFromStream(const char* path, Stream& src, size_t totalByt
 
     File file = SD_MMC.open(path, FILE_WRITE);
     if (!file) {
-        if (_debugStream) _debugStream->printf("writeAudioFromStream: Failed to open %s\n", path);
         free(buf);
         return false;
     }
@@ -210,7 +203,6 @@ bool Memory::writeAudioFromStream(const char* path, Stream& src, size_t totalByt
 
         size_t w = file.write(buf, r);
         if (w != (size_t)r) {
-            if (_debugStream) _debugStream->printf("writeAudioFromStream: write error, wrote %u of %d\n", (unsigned)w, r);
             success = false;
             break;
         }
@@ -221,26 +213,18 @@ bool Memory::writeAudioFromStream(const char* path, Stream& src, size_t totalByt
     file.close();
     free(buf);
 
-    if (_debugStream) {
-        if (success) _debugStream->printf("writeAudioFromStream: Finished writing to %s\n", path);
-        else _debugStream->printf("writeAudioFromStream: Failed writing to %s\n", path);
-    }
-
     return success;
 }
 
 // Open a file for reading. Returns an invalid File object on failure.
 File Memory::openFile(const char* path) {
     if (!_isInitialized) {
-        if (_debugStream) _debugStream->println("openFile: SD not initialized");
         return File(); // Return an invalid File object
     }
 
     File file = SD_MMC.open(path, FILE_READ);
     if (!file) {
-        if (_debugStream) _debugStream->printf("openFile: Failed to open %s for reading\n", path);
     } else {
-        if (_debugStream) _debugStream->printf("openFile: Opened %s\n", path);
     }
     return file;
 }
@@ -252,14 +236,12 @@ bool Memory::streamFile(const char* path, Stream& dest, size_t chunkSize) {
         return false; // openFile already printed an error
     }
     if (file.isDirectory()) {
-        if (_debugStream) _debugStream->printf("streamFile: %s is a directory, not a file\n", path);
         file.close();
         return false;
     }
 
     uint8_t *buf = (uint8_t*)malloc(chunkSize);
     if (!buf) {
-        if (_debugStream) _debugStream->println("streamFile: malloc failed");
         file.close();
         return false;
     }
@@ -270,7 +252,6 @@ bool Memory::streamFile(const char* path, Stream& dest, size_t chunkSize) {
         if (bytesRead > 0) {
             size_t bytesWritten = dest.write(buf, bytesRead);
             if (bytesWritten != bytesRead) {
-                if (_debugStream) _debugStream->printf("streamFile: Destination write failed. Wrote %u of %u bytes.\n", (unsigned)bytesWritten, (unsigned)bytesRead);
                 free(buf);
                 file.close();
                 return false;
@@ -282,8 +263,6 @@ bool Memory::streamFile(const char* path, Stream& dest, size_t chunkSize) {
         }
     }
 
-    if (_debugStream) _debugStream->printf("streamFile: Streamed %u bytes from %s\n", (unsigned)totalRead, path);
-
     free(buf);
     file.close();
     return true;
@@ -292,24 +271,16 @@ bool Memory::streamFile(const char* path, Stream& dest, size_t chunkSize) {
 // Delete a specific file from SD card
 bool Memory::deleteFile(const char* path) {
     if (!_isInitialized) {
-        if (_debugStream) _debugStream->println("deleteFile: SD not initialized");
         return false;
     }
 
     // Check if file exists first
     if (!SD_MMC.exists(path)) {
-        if (_debugStream) _debugStream->printf("deleteFile: File %s does not exist\n", path);
         return false;
     }
 
     // Try to delete the file
     bool success = SD_MMC.remove(path);
-    
-    if (success) {
-        if (_debugStream) _debugStream->printf("deleteFile: Successfully deleted %s\n", path);
-    } else {
-        if (_debugStream) _debugStream->printf("deleteFile: Failed to delete %s\n", path);
-    }
     
     return success;
 }
@@ -317,15 +288,10 @@ bool Memory::deleteFile(const char* path) {
 // Check if a file exists
 bool Memory::fileExists(const char* path) {
     if (!_isInitialized) {
-        if (_debugStream) _debugStream->println("fileExists: SD not initialized");
         return false;
     }
 
     bool exists = SD_MMC.exists(path);
-    
-    if (_debugStream) {
-        _debugStream->printf("fileExists: File %s %s\n", path, exists ? "exists" : "does not exist");
-    }
     
     return exists;
 }
