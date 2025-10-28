@@ -828,6 +828,52 @@
                       }
                     },
                     {
+                      "objID": "05a65a05-085a-40dc-8993-9bb89648e76a",
+                      "type": "LVGLPanelWidget",
+                      "left": -18,
+                      "top": -18,
+                      "width": 224,
+                      "height": 84,
+                      "customInputs": [],
+                      "customOutputs": [],
+                      "style": {
+                        "objID": "ceae0f25-5d52-4f6e-f36d-f1aef924fcba",
+                        "useStyle": "default",
+                        "conditionalStyles": [],
+                        "childStyles": []
+                      },
+                      "timeline": [],
+                      "eventHandlers": [],
+                      "leftUnit": "px",
+                      "topUnit": "px",
+                      "widthUnit": "px",
+                      "heightUnit": "px",
+                      "children": [],
+                      "flags": "PRESS_LOCK|CLICK_FOCUSABLE|GESTURE_BUBBLE|SNAPPABLE|SCROLL_ELASTIC|SCROLL_MOMENTUM|SCROLL_CHAIN",
+                      "hiddenFlag": "isstep",
+                      "hiddenFlagType": "expression",
+                      "clickableFlag": true,
+                      "clickableFlagType": "literal",
+                      "flagScrollbarMode": "",
+                      "flagScrollDirection": "",
+                      "checkedStateType": "literal",
+                      "disabledStateType": "literal",
+                      "states": "",
+                      "localStyles": {
+                        "objID": "ab1ff5bb-f611-437e-e8a4-86f4fc80d69c",
+                        "definition": {
+                          "MAIN": {
+                            "DEFAULT": {
+                              "bg_color": "#090909",
+                              "bg_opa": 155,
+                              "radius": 45,
+                              "border_side": "NONE"
+                            }
+                          }
+                        }
+                      }
+                    },
+                    {
                       "objID": "879c51cf-6e90-4f38-b549-bf49abfeea0d",
                       "type": "LVGLButtonWidget",
                       "left": -5,

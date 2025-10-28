@@ -47,7 +47,6 @@ typedef struct _objects_t {
     lv_obj_t *nama_1;
     lv_obj_t *obj0;
     lv_obj_t *obj1;
-    lv_obj_t *obj14;
     lv_obj_t *obj15;
     lv_obj_t *obj16;
     lv_obj_t *obj17;
@@ -82,15 +81,17 @@ typedef struct _objects_t {
     lv_obj_t *obj43;
     lv_obj_t *obj44;
     lv_obj_t *obj45;
+    lv_obj_t *obj46;
     lv_obj_t *obj5;
     lv_obj_t *obj6;
     lv_obj_t *obj7;
-    lv_obj_t *obj7__obj10;
-    lv_obj_t *obj7__obj11;
-    lv_obj_t *obj7__obj12;
-    lv_obj_t *obj7__obj13;
-    lv_obj_t *obj7__obj8;
-    lv_obj_t *obj7__obj9;
+    lv_obj_t *obj8;
+    lv_obj_t *obj8__obj10;
+    lv_obj_t *obj8__obj11;
+    lv_obj_t *obj8__obj12;
+    lv_obj_t *obj8__obj13;
+    lv_obj_t *obj8__obj14;
+    lv_obj_t *obj8__obj9;
     lv_obj_t *secondroller;
 } objects_t;
 
