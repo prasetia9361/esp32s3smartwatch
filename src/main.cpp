@@ -1,7 +1,8 @@
-#include <Arduino.h>
 #include <math.h>
 #include <Wire.h>
 
+#include "config.h"
+#include "i2sConfig.h"
 #include "lvgl_setup.h"
 // #include "communication/communication.h"
 // #include "controll/contoll.h"
@@ -15,6 +16,7 @@
 #include "storage/storage.h"
 #include "memory/memory.h"
 #include "clientServer/clientServer.h"
+#include "speaker.h"
 // #include "webapp/web.h"
 #include "pin_config.h"
 #include "ui.h"
@@ -36,6 +38,8 @@ BatteryMonitor *battery;
 SensorQMI8658 sensorStepper;
 StepCounter *stepCounter;
 
+speaker *mOutput;
+
 void applyWiFiMode(void *param);
 void applySensor(void *param);
 
@@ -47,6 +51,7 @@ extern void setTimeHHMM(const char* hhmm);
 extern void setCurrentDate(const char* datetime);
 extern void setBT(int32_t persent);
 extern void setStep(int32_t step);
+extern void setDateTime(uint16_t* dt, size_t len);
 extern uint16_t *getDateTime();
 extern int32_t getBatteryPersentage();
 extern int isStep();
@@ -54,7 +59,8 @@ extern int isStep();
 
 int lastDay = -1;
 int currentDay = -1;
-int isNtp = false;
+bool isNtp = false;
+bool isLastNtp = false;
 unsigned long lastTimeUpdate = 0;
 const unsigned long TIME_UPDATE_INTERVAL = 1000; // Update every second
 bool wifiAP = false;
@@ -62,6 +68,9 @@ bool isWifiAP = false;
 bool isWifi = false;
 bool wifi = false;
 bool lastSaveDate = false;
+unsigned long lastStatusPrint = 0;
+bool lastActive = false;
+unsigned long alarmUntil = 0; // millis timestamp until which alarm stays active
 String HH_MM = "21:00";
 String CURRENT_DATE = "TUE 18/10/2025";
 
@@ -135,6 +144,86 @@ void updateTimeDisplay() {
     }
 }
 
+int parseHHMM(const char *t)
+{
+    if (!t)
+        return -1;
+    if (strlen(t) != 5 || t[2] != ':')
+        return -1;
+    int h = (t[0] - '0') * 10 + (t[1] - '0');
+    int m = (t[3] - '0') * 10 + (t[4] - '0');
+    if (h < 0 || h > 23 || m < 0 || m > 59)
+        return -1;
+    return h * 60 + m;
+}
+int current = 0;
+bool isWithinSchedule(const char *startHHMM, const char *endHHMM)
+{
+    int start = parseHHMM(startHHMM);
+    int end = parseHHMM(endHHMM);
+    if (start < 0 || end < 0)
+        return true; // invalid => treat as always active
+    if (start == end)
+        return true; // full day
+    if (isNtp)
+    {
+      struct tm timeinfo;
+      if (!ntpSetup.getLocalTime(&timeinfo)) {
+          return false;
+      }
+      current = timeinfo.tm_hour * 60 + timeinfo.tm_min;
+    }else
+    {
+      RTC_DateTime now = rtc.getDateTime();
+      current = now.hour * 60 + now.minute;
+    }
+    if (start < end)
+      return current >= start && current < end;
+    // crosses midnight
+    return current >= start || current < end;
+}
+
+void controlAlarm()
+{
+    unsigned long nowMs = millis();
+    bool activeWindow = isWithinSchedule(STORAGE.getStartTime(), STORAGE.getEndTime());
+    if (activeWindow)
+    {
+        alarmUntil = nowMs + 6000UL; // extend 6 seconds from last motion
+    }
+    bool alarm = activeWindow && ((long)(nowMs - alarmUntil) < 0);
+
+    if (nowMs - lastStatusPrint > 1000 || alarm != lastActive)
+    {
+      
+      lastStatusPrint = nowMs;
+      lastActive = alarm;
+      unsigned long remaining = 0;
+      if (alarm && alarmUntil > nowMs){
+          remaining = (alarmUntil - nowMs + 999) / 1000;
+      } // seconds rounding up
+      USBSerial.printf("[Control] Window:%s Alarm:%s Remaining:%lus Start:%s End:%s\n",
+                    activeWindow ? "ON" : "OFF",
+                    alarm ? "TRIGGER" : "IDLE",
+                    remaining,
+                    STORAGE.getStartTime(), STORAGE.getEndTime());
+      
+
+      // if(alarm){
+      //   mOutput->startSpeaker();
+      //   while (millis() - nowMs < 1000 || alarm)
+      //   {
+      //     int sampleRead = memory->read("/audio2.mp3",samples, 128);
+      //     mOutput->write(samples, sampleRead);
+      //   }
+      //   mOutput->stopAudio();
+
+      // }
+
+      
+    }
+}
+
 void setup() {
   USBSerial.begin(115200);
   delay(1000);
@@ -144,12 +233,15 @@ void setup() {
   webServer = new clientServer(memory);
   stepCounter = new StepCounter();
   battery = new BatteryMonitor();
+  mOutput = new speaker(i2sPort,i2sPins,i2s_speaker_config,256);
 
   // Buat Mutex sebelum memulai task
   i2cMutex = xSemaphoreCreateMutex();
   if (i2cMutex == NULL) {
       USBSerial.println("Failed to create I2C Mutex!");
   }
+
+  samples = (int16_t *)malloc(sizeof(int16_t) * BYTE_RATE);
 
     // Initialize hardware
   while (!initializeHardware()) {
@@ -327,6 +419,7 @@ void applySensor(void *param){
     isWifi = switchWiFi();
     if (isNtp)
     {
+      isLastNtp = isNtp;
       static uint32_t lastCheck = 0;
       if (millis() - lastCheck > 10000){
         lastCheck = millis();
@@ -355,6 +448,31 @@ void applySensor(void *param){
           }
         }
       }
+
+      if (isNtp != isLastNtp)
+      {
+        struct tm timeinfo;
+        if (ntpSetup.getLocalTime(&timeinfo)) {
+          // Ambil Mutex sebelum operasi I2C
+          xSemaphoreTake(i2cMutex, portMAX_DELAY);
+          rtc.setDateTime(timeinfo.tm_year,
+                              timeinfo.tm_mon,
+                              timeinfo.tm_mday,
+                              timeinfo.tm_hour,
+                              timeinfo.tm_min,
+                              timeinfo.tm_sec);
+          xSemaphoreGive(i2cMutex);
+        }
+        uint16_t dt[] = {(uint16_t)timeinfo.tm_year, 
+                              (uint16_t)timeinfo.tm_mon,
+                              (uint16_t)timeinfo.tm_mday,
+                              (uint16_t)timeinfo.tm_hour,
+                              (uint16_t)timeinfo.tm_min,
+                              (uint16_t)timeinfo.tm_sec};
+        setDateTime(dt, 6);
+        isLastNtp = isNtp;
+      }
+      
       
 
       static uint32_t lastCheck = 0;
@@ -399,6 +517,8 @@ void applySensor(void *param){
       // Lepaskan Mutex setelah selesai
       xSemaphoreGive(i2cMutex);
     }
+
+    controlAlarm();
     
   vTaskDelay(5);
   }

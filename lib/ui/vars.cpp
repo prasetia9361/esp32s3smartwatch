@@ -42,6 +42,15 @@ uint16_t *getDateTime(){
     return timeBuffer;
 }
 
+void setDateTime(uint16_t* dt, size_t len){
+    if (dt == nullptr || len < 6) return;
+    eez::ArrayOfInteger flowArray(6);
+    for (int i = 0; i < 6; ++i) {
+        flowArray.at(i, dt[i]);
+    }
+    flow::setGlobalVariable(FLOW_GLOBAL_VARIABLE_TIME_INFO_ARRAY, flowArray.value);
+}
+
 void chargeState(bool isCharge){
   flow::setGlobalVariable(FLOW_GLOBAL_VARIABLE_IS_CHARGE, isCharge);
 }

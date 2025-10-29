@@ -31,6 +31,7 @@ bool Storage::loadConfig()
         docConfig["wifiPassword"] = SSDID_AP_PASSWORD;
         docConfig["setFile"] = "";
         docConfig["start"] = "08:00";
+        
         docConfig["end"] = "18:00";
 
         if (serializeJson(docConfig, file) == 0)

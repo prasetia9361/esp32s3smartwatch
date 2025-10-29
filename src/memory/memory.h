@@ -1,6 +1,7 @@
 #ifndef MEMORY_H
 #define MEMORY_H
 
+#include <ArduinoJson.h>
 #include <SD_MMC.h>
 #include <SPI.h>
 #include <FS.h>
@@ -33,6 +34,10 @@ public:
 
     // Check if a file exists
     bool fileExists(const char* path);
+
+    // Read a JSON audio file and deserialize it into a sample buffer.
+    // Returns the number of samples read, or -1 on error.
+    int read(const char* path, int16_t *samples, int maxSamples);
 
 private:
     Stream* _debugStream;

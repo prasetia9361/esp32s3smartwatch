@@ -223,9 +223,6 @@ File Memory::openFile(const char* path) {
     }
 
     File file = SD_MMC.open(path, FILE_READ);
-    if (!file) {
-    } else {
-    }
     return file;
 }
 
@@ -294,4 +291,51 @@ bool Memory::fileExists(const char* path) {
     bool exists = SD_MMC.exists(path);
     
     return exists;
+}
+
+// Read a JSON audio file and deserialize it into a sample buffer.
+int Memory::read(const char* path, int16_t *samples, int maxSamples) {
+    if (!_isInitialized) {
+        return -1; // Error: SD card not ready
+    }
+
+    File file = openFile(path);
+    if (!file || file.isDirectory()) {
+        return -1; // Error: Failed to open file or it's a directory
+    }
+
+    // Ukuran dokumen JSON harus cukup besar untuk menampung file.
+    // Sesuaikan ukuran ini jika file Anda lebih besar.
+    // Ukuran 4096 bytes cocok untuk sekitar 1000-1500 sampel integer.
+    DynamicJsonDocument doc(4096);
+
+    // Deserialize file JSON
+    DeserializationError error = deserializeJson(doc, file);
+    file.close(); // Tutup file setelah selesai dibaca
+
+    if (error) {
+        // Gagal mem-parsing JSON
+        return -1;
+    }
+
+    // Asumsikan root dari JSON adalah sebuah array
+    JsonArray array = doc.as<JsonArray>();
+    if (array.isNull()) {
+        return -1; // Error: JSON root bukan sebuah array
+    }
+
+    int samplesRead = 0;
+    // Salin data dari JsonArray ke buffer 'samples'
+    for (JsonVariant value : array) {
+        // Hentikan jika buffer 'samples' sudah penuh
+        if (samplesRead >= maxSamples) {
+            break;
+        }
+        // Konversi nilai JSON ke int16_t dan simpan di buffer
+        samples[samplesRead] = value.as<int16_t>();
+        samplesRead++;
+    }
+
+    // Kembalikan jumlah sampel yang berhasil dibaca
+    return samplesRead;
 }
