@@ -19,7 +19,7 @@
 
 // NTP Server Configuration
 #define NTP_SERVER1 "id.pool.ntp.org"
-#define NTP_SERVER2 "time.nist.gov"
+#define NTP_SERVER2 "id.pool.ntp.org"
 #define NTP_SERVER3 "time.google.com"
 
 // NTP Update Interval (in milliseconds)

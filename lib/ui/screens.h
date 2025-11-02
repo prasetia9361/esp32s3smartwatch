@@ -9,27 +9,21 @@ extern "C" {
 
 typedef struct _objects_t {
     lv_obj_t *main;
-    lv_obj_t *menu_1;
-    lv_obj_t *setting_1;
-    lv_obj_t *audioo_1;
-    lv_obj_t *alarm_1;
+    lv_obj_t *menu;
+    lv_obj_t *setting;
+    lv_obj_t *audioo;
     lv_obj_t *date_time;
     lv_obj_t *hasilhidrasi;
-    lv_obj_t *submenuwifi;
-    lv_obj_t *submenuhotspot;
-    lv_obj_t *sub_mneu_dsiplay_1;
-    lv_obj_t *healty_1;
-    lv_obj_t *healty_2;
+    lv_obj_t *healty;
+    lv_obj_t *calculator_healty;
+    lv_obj_t *alarm;
+    lv_obj_t *setting_alarm;
     lv_obj_t *button_alarm_1;
     lv_obj_t *button_audio_1;
-    lv_obj_t *button_background_1;
     lv_obj_t *button_date_time;
     lv_obj_t *button_date_time_1;
     lv_obj_t *button_healty_1;
-    lv_obj_t *button_lock_1;
     lv_obj_t *button_setting_1;
-    lv_obj_t *button_sleep_1;
-    lv_obj_t *button_tampilan_1;
     lv_obj_t *buttonsavetime;
     lv_obj_t *hourroller;
     lv_obj_t *inputama_1;
@@ -47,6 +41,11 @@ typedef struct _objects_t {
     lv_obj_t *nama_1;
     lv_obj_t *obj0;
     lv_obj_t *obj1;
+    lv_obj_t *obj10;
+    lv_obj_t *obj11;
+    lv_obj_t *obj12;
+    lv_obj_t *obj13;
+    lv_obj_t *obj14;
     lv_obj_t *obj15;
     lv_obj_t *obj16;
     lv_obj_t *obj17;
@@ -82,51 +81,49 @@ typedef struct _objects_t {
     lv_obj_t *obj44;
     lv_obj_t *obj45;
     lv_obj_t *obj46;
+    lv_obj_t *obj47;
+    lv_obj_t *obj48;
+    lv_obj_t *obj49;
     lv_obj_t *obj5;
+    lv_obj_t *obj50;
+    lv_obj_t *obj51;
+    lv_obj_t *obj52;
+    lv_obj_t *obj53;
+    lv_obj_t *obj54;
     lv_obj_t *obj6;
     lv_obj_t *obj7;
     lv_obj_t *obj8;
-    lv_obj_t *obj8__obj10;
-    lv_obj_t *obj8__obj11;
-    lv_obj_t *obj8__obj12;
-    lv_obj_t *obj8__obj13;
-    lv_obj_t *obj8__obj14;
-    lv_obj_t *obj8__obj9;
-    lv_obj_t *secondroller;
+    lv_obj_t *obj9;
+    lv_obj_t *rolleralarmhours;
+    lv_obj_t *rolleralarmminutes;
 } objects_t;
 
 extern objects_t objects;
 
 enum ScreensEnum {
     SCREEN_ID_MAIN = 1,
-    SCREEN_ID_MENU_1 = 2,
-    SCREEN_ID_SETTING_1 = 3,
-    SCREEN_ID_AUDIOO_1 = 4,
-    SCREEN_ID_ALARM_1 = 5,
-    SCREEN_ID_DATE_TIME = 6,
-    SCREEN_ID_HASILHIDRASI = 7,
-    SCREEN_ID_SUBMENUWIFI = 8,
-    SCREEN_ID_SUBMENUHOTSPOT = 9,
-    SCREEN_ID_SUB_MNEU_DSIPLAY_1 = 10,
-    SCREEN_ID_HEALTY_1 = 11,
-    SCREEN_ID_HEALTY_2 = 12,
-    SCREEN_ID_HEADER_INFO = 13,
+    SCREEN_ID_MENU = 2,
+    SCREEN_ID_SETTING = 3,
+    SCREEN_ID_AUDIOO = 4,
+    SCREEN_ID_DATE_TIME = 5,
+    SCREEN_ID_HASILHIDRASI = 6,
+    SCREEN_ID_HEALTY = 7,
+    SCREEN_ID_CALCULATOR_HEALTY = 8,
+    SCREEN_ID_ALARM = 9,
+    SCREEN_ID_SETTING_ALARM = 10,
 };
 
 void create_screen_main();
 void tick_screen_main();
 
-void create_screen_menu_1();
-void tick_screen_menu_1();
+void create_screen_menu();
+void tick_screen_menu();
 
-void create_screen_setting_1();
-void tick_screen_setting_1();
+void create_screen_setting();
+void tick_screen_setting();
 
-void create_screen_audioo_1();
-void tick_screen_audioo_1();
-
-void create_screen_alarm_1();
-void tick_screen_alarm_1();
+void create_screen_audioo();
+void tick_screen_audioo();
 
 void create_screen_date_time();
 void tick_screen_date_time();
@@ -134,23 +131,17 @@ void tick_screen_date_time();
 void create_screen_hasilhidrasi();
 void tick_screen_hasilhidrasi();
 
-void create_screen_submenuwifi();
-void tick_screen_submenuwifi();
+void create_screen_healty();
+void tick_screen_healty();
 
-void create_screen_submenuhotspot();
-void tick_screen_submenuhotspot();
+void create_screen_calculator_healty();
+void tick_screen_calculator_healty();
 
-void create_screen_sub_mneu_dsiplay_1();
-void tick_screen_sub_mneu_dsiplay_1();
+void create_screen_alarm();
+void tick_screen_alarm();
 
-void create_screen_healty_1();
-void tick_screen_healty_1();
-
-void create_screen_healty_2();
-void tick_screen_healty_2();
-
-void create_user_widget_header_info(lv_obj_t *parent_obj, void *flowState, int startWidgetIndex);
-void tick_user_widget_header_info(void *flowState, int startWidgetIndex);
+void create_screen_setting_alarm();
+void tick_screen_setting_alarm();
 
 void create_screens();
 void tick_screen(int screen_index);

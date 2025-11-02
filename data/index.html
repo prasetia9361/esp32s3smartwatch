@@ -235,7 +235,7 @@
 </head>
 <body>
     <video id="background-video" autoplay loop muted>
-        <source src="321.mp4" type="video/mp4">
+        <source src="/data/321.mp4" type="video/mp4">
         Your browser does not support the video tag.
     </video>
 
@@ -246,7 +246,7 @@
         <div class="file-upload">
             <h2>Upload File :</h2>
             <form action="/upload" method="post" enctype="multipart/form-data" onsubmit="return checkFileSize()">
-                <input type="file" name="file" id="fileInput" accept=".mp3" required>
+                <input type="file" name="file" id="fileInput" accept=".wav" required>
                 <input type="submit" value="Upload" class="glow-on-hover">
             </form>
         </div>

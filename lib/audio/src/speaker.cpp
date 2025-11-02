@@ -33,7 +33,7 @@ void speaker::write(int16_t *samples, int count){
     while (sampleIndex < count)
     {
         int samplestoSend = 0;
-        for (int i = 0; i < rawSamplesSize && sampleIndex < count; i++){
+        for (int i = 0; i < count; i++){
                 int sample = processSample(samples[sampleIndex]);
                 frames[i * 2] = sample;
                 frames[i * 2 + 1] = sample;

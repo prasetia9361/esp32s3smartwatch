@@ -30,9 +30,9 @@ bool Storage::loadConfig()
         docConfig["wifiAp"] = SSDID_AP;
         docConfig["wifiPassword"] = SSDID_AP_PASSWORD;
         docConfig["setFile"] = "";
-        docConfig["start"] = "08:00";
+        docConfig["start"] = "21:00";
         
-        docConfig["end"] = "18:00";
+        docConfig["end"] = "00:45";
 
         if (serializeJson(docConfig, file) == 0)
         {
@@ -47,8 +47,8 @@ bool Storage::loadConfig()
         strlcpy(config.wifiAp, SSDID_AP, sizeof(config.wifiAp));
         strlcpy(config.wifiPassword, SSDID_AP_PASSWORD, sizeof(config.wifiPassword));
         strlcpy(config.setFile, "", sizeof(config.setFile));
-        strlcpy(config.startTime, "08:00", sizeof(config.startTime));
-        strlcpy(config.endTime, "18:00", sizeof(config.endTime));
+        strlcpy(config.startTime, "21:00", sizeof(config.startTime));
+        strlcpy(config.endTime, "00:45", sizeof(config.endTime));
 
         return true;
     }
@@ -73,8 +73,8 @@ bool Storage::loadConfig()
     strlcpy(config.wifiAp, docConfig["wifiAp"] | SSDID_AP, sizeof(config.wifiAp));
     strlcpy(config.wifiPassword, docConfig["wifiPassword"] | SSDID_AP_PASSWORD, sizeof(config.wifiPassword));
     strlcpy(config.setFile, docConfig["setFile"] | "", sizeof(config.setFile));
-    strlcpy(config.startTime, docConfig["start"] | "08:00", sizeof(config.startTime));
-    strlcpy(config.endTime, docConfig["end"] | "18:00", sizeof(config.endTime));
+    strlcpy(config.startTime, docConfig["start"] | "21:00", sizeof(config.startTime));
+    strlcpy(config.endTime, docConfig["end"] | "00:45", sizeof(config.endTime));
 
     Serial.println(F("[SPIFFS] Success Load Config"));
     return true;
