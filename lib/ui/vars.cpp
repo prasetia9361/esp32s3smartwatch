@@ -90,10 +90,7 @@ bool gethidenAlaram(){
 
 const char *getStartTime(){
   const char *time = flow::getGlobalVariable(FLOW_GLOBAL_VARIABLE_START_TIME).getString();
-  Serial.print("[DEBUG] getStartTime() raw value: '");
-  Serial.print(time ? time : "NULL");
-  Serial.print("' length: ");
-  Serial.println(time ? strlen(time) : 0);
+
   
   // Validasi format HH:MM
   if (time && strlen(time) == 5 && time[2] == ':') {
@@ -103,19 +100,12 @@ const char *getStartTime(){
     return time;
   }
   
-  // Return dari cache jika flow variable tidak valid
-  Serial.print("[WARN] getStartTime() returned invalid format, using cached: ");
-  Serial.println(cachedStartTime);
   return cachedStartTime;
 }
 
 const char *getEndTime(){
   const char *time = flow::getGlobalVariable(FLOW_GLOBAL_VARIABLE_END_TIME).getString();
-  Serial.print("[DEBUG] getEndTime() raw value: '");
-  Serial.print(time ? time : "NULL");
-  Serial.print("' length: ");
-  Serial.println(time ? strlen(time) : 0);
-  
+
   // Validasi format HH:MM
   if (time && strlen(time) == 5 && time[2] == ':') {
     // Update cache
@@ -124,9 +114,6 @@ const char *getEndTime(){
     return time;
   }
   
-  // Return dari cache jika flow variable tidak valid
-  Serial.print("[WARN] getEndTime() returned invalid format, using cached: ");
-  Serial.println(cachedEndTime);
   return cachedEndTime;
 }
 
@@ -140,11 +127,6 @@ void timeAlarm(int32_t *data, size_t len ){
 }
 
 void setScheduleTime(const char *startTime, const char *endTime) {
-  Serial.println("[DEBUG] setScheduleTime() called");
-  Serial.print("[DEBUG] startTime param: ");
-  Serial.println(startTime ? startTime : "NULL");
-  Serial.print("[DEBUG] endTime param: ");
-  Serial.println(endTime ? endTime : "NULL");
   
   if (startTime && strlen(startTime) == 5 && startTime[2] == ':') {
     // Update cache
@@ -152,15 +134,10 @@ void setScheduleTime(const char *startTime, const char *endTime) {
     cachedStartTime[5] = '\0';
     
     flow::setGlobalVariable(FLOW_GLOBAL_VARIABLE_START_TIME, startTime);
-    Serial.print("[UI] Set START_TIME to: ");
-    Serial.println(startTime);
     
     // Verifikasi apakah benar-benar tersimpan
     const char *verify = flow::getGlobalVariable(FLOW_GLOBAL_VARIABLE_START_TIME).getString();
-    Serial.print("[UI] Verification - START_TIME now reads: ");
-    Serial.println(verify ? verify : "NULL");
   } else {
-    Serial.println("[UI] Invalid startTime format, using default 21:00");
     strncpy(cachedStartTime, "21:00", 5);
     cachedStartTime[5] = '\0';
     flow::setGlobalVariable(FLOW_GLOBAL_VARIABLE_START_TIME, "21:00");
@@ -172,22 +149,18 @@ void setScheduleTime(const char *startTime, const char *endTime) {
     cachedEndTime[5] = '\0';
     
     flow::setGlobalVariable(FLOW_GLOBAL_VARIABLE_END_TIME, endTime);
-    Serial.print("[UI] Set END_TIME to: ");
-    Serial.println(endTime);
+
     
     // Verifikasi apakah benar-benar tersimpan
     const char *verify = flow::getGlobalVariable(FLOW_GLOBAL_VARIABLE_END_TIME).getString();
-    Serial.print("[UI] Verification - END_TIME now reads: ");
-    Serial.println(verify ? verify : "NULL");
+
   } else {
-    Serial.println("[UI] Invalid endTime format, using default 00:45");
     strncpy(cachedEndTime, "00:45", 5);
     cachedEndTime[5] = '\0';
     flow::setGlobalVariable(FLOW_GLOBAL_VARIABLE_END_TIME, "00:45");
   }
   
   scheduleInitialized = true;
-  Serial.println("[UI] Schedule cache updated successfully");
 }
 
 void fileAudio(const char **data, size_t len){
@@ -230,6 +203,18 @@ int32_t getUsia(){
 
 int32_t getBB(){
   return flow::getGlobalVariable(FLOW_GLOBAL_VARIABLE_BB).getInt32();
+}
+
+bool getCalculate(){
+  return flow::getGlobalVariable(FLOW_GLOBAL_VARIABLE_IS_CALCULATE).getBoolean();
+}
+
+void setCalculate(bool data){
+  flow::setGlobalVariable(FLOW_GLOBAL_VARIABLE_IS_CALCULATE, data);
+}
+
+void sethasilHitung(const char* hasil){
+  flow::setGlobalVariable(FLOW_GLOBAL_VARIABLE_HASIL_HITUNG, hasil);
 }
 
 

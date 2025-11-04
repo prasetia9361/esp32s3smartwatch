@@ -19,6 +19,8 @@
         "iosfwd": "cpp",
         "new": "cpp",
         "sstream": "cpp",
-        "stop_token": "cpp"
+        "stop_token": "cpp",
+        "chrono": "cpp",
+        "variant": "cpp"
     }
 }

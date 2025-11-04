@@ -57,8 +57,27 @@ void clientServer::upload() {
         },
         [this](AsyncWebServerRequest *request, String filename, size_t index,
                uint8_t *data, size_t len, bool final) {
-            // setter
-            _memory->writeFile(("/" + filename).c_str(), data, len);
+            // Upload handler dipanggil berkali-kali untuk file besar (chunked upload)
+            // index = posisi byte saat ini
+            // len = panjang chunk saat ini
+            // final = true jika ini chunk terakhir
+            
+            String filepath = "/" + filename;
+            
+            if (index == 0) {
+                // Chunk pertama: buat file baru (overwrite jika sudah ada)
+                Serial.printf("Upload Start: %s\n", filename.c_str());
+                _memory->writeFile(filepath.c_str(), data, len);
+            } else {
+                // Chunk berikutnya: append ke file yang sudah ada
+                _memory->appendFile(filepath.c_str(), data, len);
+            }
+            
+            if (final) {
+                // Chunk terakhir: log total size
+                Serial.printf("Upload Complete: %s, Total Size: %u bytes\n", 
+                             filename.c_str(), index + len);
+            }
         });
 }
 void clientServer::delet() {

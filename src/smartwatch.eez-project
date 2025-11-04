@@ -527,6 +527,20 @@
         "type": "boolean",
         "defaultValue": "false",
         "persistent": false
+      },
+      {
+        "objID": "f3e85ecb-9974-4e8f-f9cc-cc194ed2dcb8",
+        "name": "isCalculate",
+        "type": "boolean",
+        "defaultValue": "false",
+        "persistent": false
+      },
+      {
+        "objID": "40824fa2-252d-4808-f544-dc3462d4c289",
+        "name": "hasilHitung",
+        "type": "string",
+        "defaultValue": "\"ipin,kebutuhan cairanmu 2400 ml / hari\"",
+        "persistent": false
       }
     ],
     "structures": [],
@@ -4388,9 +4402,9 @@
             {
               "objID": "727505d4-406a-4741-c139-b050548ba075",
               "type": "LVGLButtonWidget",
-              "left": 0,
-              "top": 15,
-              "width": 59,
+              "left": 70,
+              "top": 344,
+              "width": 222,
               "height": 73,
               "customInputs": [],
               "customOutputs": [],
@@ -4416,9 +4430,9 @@
                 {
                   "objID": "abfe9efc-380a-4bed-fe01-c07e379f5c28",
                   "type": "LVGLLabelWidget",
-                  "left": 4,
+                  "left": 2,
                   "top": 10,
-                  "width": 19,
+                  "width": 187,
                   "height": 33,
                   "customInputs": [],
                   "customOutputs": [],
@@ -4447,8 +4461,8 @@
                   "localStyles": {
                     "objID": "151a8d29-fe4f-4c9d-d490-edaa8095edc4"
                   },
-                  "text": "LVGL.LV_SYMBOL_LEFT",
-                  "textType": "expression",
+                  "text": "Hitung Baru",
+                  "textType": "literal",
                   "longMode": "WRAP",
                   "recolor": false
                 }
@@ -4470,7 +4484,7 @@
             {
               "objID": "1ed708ed-09ce-45d6-81df-c378f846a306",
               "type": "LVGLLabelWidget",
-              "left": 59,
+              "left": 37,
               "top": 34,
               "width": 295,
               "height": 34,
@@ -4505,6 +4519,52 @@
               "textType": "literal",
               "longMode": "WRAP",
               "recolor": false
+            },
+            {
+              "objID": "d5722e15-8066-4b48-b4cb-0f6f20b91200",
+              "type": "LVGLLabelWidget",
+              "left": 73,
+              "top": 148,
+              "width": 216,
+              "height": 34,
+              "customInputs": [],
+              "customOutputs": [],
+              "style": {
+                "objID": "1cf167d1-d183-4319-9301-bcb055f8b6ea",
+                "useStyle": "default",
+                "conditionalStyles": [],
+                "childStyles": []
+              },
+              "timeline": [],
+              "eventHandlers": [],
+              "leftUnit": "px",
+              "topUnit": "px",
+              "widthUnit": "content",
+              "heightUnit": "content",
+              "children": [],
+              "flags": "PRESS_LOCK|CLICK_FOCUSABLE|GESTURE_BUBBLE|SNAPPABLE|SCROLLABLE|SCROLL_ELASTIC|SCROLL_MOMENTUM|SCROLL_CHAIN",
+              "hiddenFlagType": "literal",
+              "clickableFlagType": "literal",
+              "flagScrollbarMode": "",
+              "flagScrollDirection": "",
+              "checkedStateType": "literal",
+              "disabledStateType": "literal",
+              "states": "",
+              "useStyle": "fontcore",
+              "localStyles": {
+                "objID": "416db295-6da3-4bab-c925-54a932b84629",
+                "definition": {
+                  "MAIN": {
+                    "PRESSED": {
+                      "align": "CENTER"
+                    }
+                  }
+                }
+              },
+              "text": "hasilHitung",
+              "textType": "expression",
+              "longMode": "WRAP",
+              "recolor": false
             }
           ],
           "flags": "PRESS_LOCK|CLICK_FOCUSABLE|GESTURE_BUBBLE|SNAPPABLE|SCROLL_ELASTIC|SCROLL_MOMENTUM|SCROLL_CHAIN",
@@ -4522,9 +4582,9 @@
         {
           "objID": "53624c30-0b2a-4028-bd6b-48b953334d65",
           "type": "LVGLActionComponent",
-          "left": 59,
-          "top": -69,
-          "width": 256,
+          "left": 424,
+          "top": 224,
+          "width": 323,
           "height": 54,
           "customInputs": [],
           "customOutputs": [],
@@ -4533,10 +4593,42 @@
               "objID": "1f272761-7333-483f-898e-1d1d0b4f9bb5",
               "action": "CHANGE_SCREEN",
               "showPreviousScreen": false,
-              "screen": "healty",
+              "screen": "calculator_healty",
               "fadeMode": "FADE_IN",
               "speed": 200,
               "delay": 0
+            }
+          ]
+        },
+        {
+          "objID": "faff3145-2a3a-4acf-de17-049a4b7fbf17",
+          "type": "SetVariableActionComponent",
+          "left": 439,
+          "top": 319,
+          "width": 165,
+          "height": 123,
+          "customInputs": [],
+          "customOutputs": [],
+          "entries": [
+            {
+              "objID": "6d534370-78e0-4c72-cee4-ec8104f303ed",
+              "variable": "isCalculate",
+              "value": "false"
+            },
+            {
+              "objID": "2935d779-9f3f-48e4-da4a-d86275aa7512",
+              "variable": "nama",
+              "value": "\"\""
+            },
+            {
+              "objID": "b7c66cb4-9dbf-40fa-d9c7-ef024cf53a4f",
+              "variable": "usia",
+              "value": "0"
+            },
+            {
+              "objID": "1a455d72-d625-48b1-be15-4c40cab26f56",
+              "variable": "bb",
+              "value": "0"
             }
           ]
         }
@@ -4547,6 +4639,13 @@
           "source": "727505d4-406a-4741-c139-b050548ba075",
           "output": "PRESSED",
           "target": "53624c30-0b2a-4028-bd6b-48b953334d65",
+          "input": "@seqin"
+        },
+        {
+          "objID": "a57506ea-9370-4af0-f0bd-0635ce5b036f",
+          "source": "727505d4-406a-4741-c139-b050548ba075",
+          "output": "PRESSED",
+          "target": "faff3145-2a3a-4acf-de17-049a4b7fbf17",
           "input": "@seqin"
         }
       ],
@@ -6294,11 +6393,16 @@
           "type": "SetVariableActionComponent",
           "left": 723,
           "top": 599,
-          "width": 146,
-          "height": 101,
+          "width": 159,
+          "height": 123,
           "customInputs": [],
           "customOutputs": [],
           "entries": [
+            {
+              "objID": "22a21c9c-06da-4380-a90b-0ee5ad33e98a",
+              "variable": "isCalculate",
+              "value": "true"
+            },
             {
               "objID": "89ce5ed6-49cf-42c6-ae39-40b0117bdb9b",
               "variable": "warning",
@@ -7216,7 +7320,7 @@
           "left": 41,
           "top": -152,
           "width": 243,
-          "height": 53,
+          "height": 54,
           "customInputs": [],
           "customOutputs": [],
           "actions": [
@@ -7236,8 +7340,8 @@
           "type": "LVGLActionComponent",
           "left": 432,
           "top": 276,
-          "width": 298,
-          "height": 53,
+          "width": 299,
+          "height": 54,
           "customInputs": [],
           "customOutputs": [],
           "actions": [
@@ -7258,7 +7362,7 @@
           "left": 432,
           "top": 448,
           "width": 152,
-          "height": 100,
+          "height": 101,
           "customInputs": [],
           "customOutputs": [],
           "entries": [
@@ -7771,8 +7875,8 @@
           "type": "LVGLActionComponent",
           "left": 471,
           "top": -96,
-          "width": 249,
-          "height": 53,
+          "width": 250,
+          "height": 54,
           "customInputs": [],
           "customOutputs": [],
           "actions": [
@@ -7792,8 +7896,8 @@
           "type": "SetVariableActionComponent",
           "left": 496,
           "top": -9,
-          "width": 742,
-          "height": 165,
+          "width": 779,
+          "height": 167,
           "customInputs": [],
           "customOutputs": [],
           "entries": [
@@ -7815,7 +7919,7 @@
             {
               "objID": "0241c324-3df5-45a1-c3c1-a846c438edd0",
               "variable": "endTime",
-              "value": "(h[0] < 10 ? \"0\" + h[0] : h[0])+ \":\" + ((h[1] + (h1*3)) < 10 ? \"0\" + (h[1] + (h1*3)) : (h[1] + (h1*3)))"
+              "value": "(h[0] < 10 ? \"0\" + h[0] : h[0])+ \":\" + ((h[1] + (h1 + 1)) < 10 ? \"0\" + (h[1] + (h1 + 1)) : (h[1] + (h1 + 1)))"
             },
             {
               "objID": "4896cb79-9111-4e4c-f083-1497bd7775b1",
@@ -7874,7 +7978,7 @@
           "objID": "523e36a2-63bf-4668-9dc7-d2354c4ba5fb",
           "name": "arraydurasi",
           "type": "array:integer",
-          "defaultValue": "[0,10,20,30]",
+          "defaultValue": "[1,2,3,4]",
           "persistent": false,
           "native": false
         },

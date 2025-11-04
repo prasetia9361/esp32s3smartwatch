@@ -1,4 +1,5 @@
 #include "memory.h"
+#include <Arduino.h>
 
 Memory::Memory() : _isInitialized(false) {
 }
@@ -111,16 +112,19 @@ String Memory::listDirJson(const char *dirname) {
 // Write complete buffer to file (overwrite)
 bool Memory::writeFile(const char* path, const uint8_t* buf, size_t size) {
     if (!_isInitialized) {
+        Serial.println("[Memory] writeFile: Not initialized!");
         return false;
     }
 
     // Remove existing file to ensure overwrite
     if (SD_MMC.exists(path)) {
         SD_MMC.remove(path);
+        Serial.printf("[Memory] writeFile: Removed existing file: %s\n", path);
     }
 
     File file = SD_MMC.open(path, FILE_WRITE);
     if (!file) {
+        Serial.printf("[Memory] writeFile: Failed to open %s\n", path);
         return false;
     }
 
@@ -128,15 +132,18 @@ bool Memory::writeFile(const char* path, const uint8_t* buf, size_t size) {
     file.close();
 
     if (written != size) {
+        Serial.printf("[Memory] writeFile: Write incomplete %u/%u bytes to %s\n", written, size, path);
         return false;
     }
 
+    Serial.printf("[Memory] writeFile: Wrote %u bytes to %s\n", written, path);
     return true;
 }
 
 // Append buffer to file (creates if not exist)
 bool Memory::appendFile(const char* path, const uint8_t* buf, size_t size) {
     if (!_isInitialized) {
+        Serial.println("[Memory] appendFile: Not initialized!");
         return false;
     }
 
@@ -145,6 +152,7 @@ bool Memory::appendFile(const char* path, const uint8_t* buf, size_t size) {
         // Fallback: try FILE_WRITE (some cores map FILE_APPEND to FILE_WRITE)
         file = SD_MMC.open(path, FILE_WRITE);
         if (!file) {
+            Serial.printf("[Memory] appendFile: Failed to open %s\n", path);
             return false;
         }
         // ensure we append
@@ -155,9 +163,11 @@ bool Memory::appendFile(const char* path, const uint8_t* buf, size_t size) {
     file.close();
 
     if (written != size) {
+        Serial.printf("[Memory] appendFile: Write incomplete %u/%u bytes to %s\n", written, size, path);
         return false;
     }
 
+    Serial.printf("[Memory] appendFile: Appended %u bytes to %s\n", written, path);
     return true;
 }
 

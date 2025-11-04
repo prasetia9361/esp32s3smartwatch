@@ -162,6 +162,9 @@ extern void setPlayAlarm(bool data);
 extern const char *getNama();
 extern int32_t getUsia();
 extern int32_t getBB();
+extern bool getCalculate();
+extern void setCalculate(bool data);
+extern void sethasilHitung(const char* hasil);
 
 int lastDay = -1;
 int currentDay = -1;
@@ -520,6 +523,8 @@ void applySensor(void *param){
     saveAlarm  = getSaveAlarm();
     hiddenAlarm = gethidenAlaram();
     setAlarm = getSetAlarm();
+    const char *nama = getNama();
+    int32_t bb = getBB();
     const char *startTime = getStartTime();
     const char *endTime = getEndTime();
 
@@ -540,6 +545,24 @@ void applySensor(void *param){
     chargeState(battery->isCharging());
     setBT(battery->getBatteryPercentage());
     setStep(stepCounter->getStepCount());
+
+    if (getCalculate() == true && bb > 0)
+    {
+      // Hitung kebutuhan cairan berdasarkan berat badan
+      int hidrasi = 0;
+      
+      if (bb < 10) {
+        hidrasi = bb * 100;
+      } else if (bb >= 10 && bb <= 20) {
+        hidrasi = 1000 + ((bb - 10) * 50);
+      } else { // bb > 20
+        hidrasi = 1500 + ((bb - 20) * 20);
+      }
+      
+      String hasil = String("         ") + String(nama) + ", \nkebutuhan cairanmu \n   " + String(hidrasi) + " ml / hari";
+      sethasilHitung(hasil.c_str());
+    }
+    
 
     if (saveAlarm && !isAlarm)
     {
@@ -671,6 +694,76 @@ void applySensor(void *param){
   }
 }
 
+void listSDCard(const char* dirname) {
+  USBSerial.printf("\n=== Listing directory: %s ===\n", dirname);
+  File root = SD_MMC.open(dirname);
+  if (!root) {
+    USBSerial.println("Failed to open directory");
+    return;
+  }
+  if (!root.isDirectory()) {
+    USBSerial.println("Not a directory");
+    return;
+  }
+
+  File file = root.openNextFile();
+  while (file) {
+    if (file.isDirectory()) {
+      USBSerial.printf("  DIR : %s\n", file.name());
+    } else {
+      USBSerial.printf("  FILE: %s\t\tSIZE: %d bytes\n", file.name(), file.size());
+    }
+    file = root.openNextFile();
+  }
+  USBSerial.println("=========================\n");
+}
+
+
+void readWavHeader(const char* filename) {
+  File audioFile = SD_MMC.open(filename, FILE_READ);
+  if (!audioFile) {
+    USBSerial.printf("Failed to open %s\n", filename);
+    return;
+  }
+
+  USBSerial.printf("\n=== WAV Header Info for %s ===\n", filename);
+  USBSerial.printf("File Size: %d bytes\n", audioFile.size());
+  
+  // Baca WAV header (44 bytes)
+  uint8_t header[44];
+  audioFile.read(header, 44);
+  
+  // Parse WAV header
+  char chunkID[5] = {0};
+  memcpy(chunkID, header, 4);
+  uint32_t chunkSize = *(uint32_t*)(header + 4);
+  char format[5] = {0};
+  memcpy(format, header + 8, 4);
+  
+  uint16_t audioFormat = *(uint16_t*)(header + 20);
+  uint16_t numChannels = *(uint16_t*)(header + 22);
+  uint32_t sampleRate = *(uint32_t*)(header + 24);
+  uint32_t byteRate = *(uint32_t*)(header + 28);
+  uint16_t blockAlign = *(uint16_t*)(header + 32);
+  uint16_t bitsPerSample = *(uint16_t*)(header + 34);
+  uint32_t subchunk2Size = *(uint32_t*)(header + 40);
+  
+  USBSerial.printf("ChunkID: %s\n", chunkID);
+  USBSerial.printf("ChunkSize: %u\n", chunkSize);
+  USBSerial.printf("Format: %s\n", format);
+  USBSerial.printf("Audio Format: %u (1=PCM)\n", audioFormat);
+  USBSerial.printf("Channels: %u\n", numChannels);
+  USBSerial.printf("Sample Rate: %u Hz\n", sampleRate);
+  USBSerial.printf("Byte Rate: %u\n", byteRate);
+  USBSerial.printf("Block Align: %u\n", blockAlign);
+  USBSerial.printf("Bits Per Sample: %u\n", bitsPerSample);
+  USBSerial.printf("Data Size: %u bytes\n", subchunk2Size);
+  USBSerial.printf("Expected duration: %.2f seconds\n", (float)subchunk2Size / byteRate);
+  USBSerial.println("============================\n");
+  
+  audioFile.close();
+}
+
 // --- MODIFIKASI: Fungsi controlAlarm diubah menjadi task mandiri ---
 void controlAlarmTask(void *param) {
     bool isPlaying = false;
@@ -681,8 +774,8 @@ void controlAlarmTask(void *param) {
     USBSerial.println("[Audio] Alarm task started, waiting for system ready...");
     vTaskDelay(pdMS_TO_TICKS(5000));  // 5 detik
     
-    USBSerial.println("[Audio] System ready, initializing audio...");
-    
+    listSDCard("/");           // List semua file di root SD card
+    readWavHeader("/test.wav"); // Baca dan tampilkan info header WAV
     // Enable PA (Power Amplifier) pin
     pinMode(PA, OUTPUT);
     digitalWrite(PA, HIGH);  // Enable amplifier

@@ -1517,8 +1517,8 @@ void create_screen_hasilhidrasi() {
         {
             lv_obj_t *obj = lv_btn_create(parent_obj);
             objects.obj29 = obj;
-            lv_obj_set_pos(obj, 0, 15);
-            lv_obj_set_size(obj, 59, 73);
+            lv_obj_set_pos(obj, 70, 344);
+            lv_obj_set_size(obj, 222, 73);
             lv_obj_add_event_cb(obj, event_handler_cb_hasilhidrasi_obj29, LV_EVENT_ALL, flowState);
             lv_obj_add_flag(obj, LV_OBJ_FLAG_SCROLL_ON_FOCUS);
             lv_obj_clear_flag(obj, LV_OBJ_FLAG_SCROLLABLE);
@@ -1527,20 +1527,28 @@ void create_screen_hasilhidrasi() {
                 lv_obj_t *parent_obj = obj;
                 {
                     lv_obj_t *obj = lv_label_create(parent_obj);
-                    objects.obj30 = obj;
-                    lv_obj_set_pos(obj, 4, 10);
+                    lv_obj_set_pos(obj, 2, 10);
                     lv_obj_set_size(obj, LV_SIZE_CONTENT, LV_SIZE_CONTENT);
-                    lv_label_set_text(obj, "");
+                    lv_label_set_text(obj, "Hitung Baru");
                     apply_style_icon(obj);
                 }
             }
         }
         {
             lv_obj_t *obj = lv_label_create(parent_obj);
-            lv_obj_set_pos(obj, 59, 34);
+            lv_obj_set_pos(obj, 37, 34);
             lv_obj_set_size(obj, LV_SIZE_CONTENT, LV_SIZE_CONTENT);
             lv_label_set_text(obj, "Kalkulator Hidrasi");
             apply_style_fontcore(obj);
+        }
+        {
+            lv_obj_t *obj = lv_label_create(parent_obj);
+            objects.obj30 = obj;
+            lv_obj_set_pos(obj, 73, 148);
+            lv_obj_set_size(obj, LV_SIZE_CONTENT, LV_SIZE_CONTENT);
+            lv_label_set_text(obj, "");
+            apply_style_fontcore(obj);
+            lv_obj_set_style_align(obj, LV_ALIGN_CENTER, LV_PART_MAIN | LV_STATE_PRESSED);
         }
     }
 }
@@ -1548,7 +1556,7 @@ void create_screen_hasilhidrasi() {
 void tick_screen_hasilhidrasi() {
     void *flowState = getFlowState(0, 5);
     {
-        const char *new_val = evalTextProperty(flowState, 2, 3, "Failed to evaluate Text in Label widget");
+        const char *new_val = evalTextProperty(flowState, 4, 3, "Failed to evaluate Text in Label widget");
         const char *cur_val = lv_label_get_text(objects.obj30);
         if (strcmp(new_val, cur_val) != 0) {
             tick_value_change_obj = objects.obj30;
