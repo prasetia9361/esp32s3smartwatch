@@ -399,23 +399,6 @@ static void event_handler_cb_alarm_obj47(lv_event_t *e) {
     }
 }
 
-static void event_handler_cb_alarm_obj50(lv_event_t *e) {
-    lv_event_code_t event = lv_event_get_code(e);
-    void *flowState = e->user_data;
-    if (event == LV_EVENT_PRESSED) {
-        flowPropagateValue(flowState, 12, 0);
-    }
-    if (event == LV_EVENT_VALUE_CHANGED) {
-        lv_obj_t *ta = lv_event_get_target(e);
-        if (tick_value_change_obj != ta) {
-            int32_t value = lv_dropdown_get_selected(ta);
-            if (tick_value_change_obj != ta) {
-                assignIntegerProperty(flowState, 12, 5, value, "Failed to assign Selected in Dropdown widget");
-            }
-        }
-    }
-}
-
 static void event_handler_cb_setting_alarm_rolleralarmhours(lv_event_t *e) {
     lv_event_code_t event = lv_event_get_code(e);
     void *flowState = e->user_data;
@@ -444,7 +427,7 @@ static void event_handler_cb_setting_alarm_rolleralarmminutes(lv_event_t *e) {
     }
 }
 
-static void event_handler_cb_setting_alarm_obj51(lv_event_t *e) {
+static void event_handler_cb_setting_alarm_obj50(lv_event_t *e) {
     lv_event_code_t event = lv_event_get_code(e);
     void *flowState = e->user_data;
     if (event == LV_EVENT_PRESSED) {
@@ -452,11 +435,25 @@ static void event_handler_cb_setting_alarm_obj51(lv_event_t *e) {
     }
 }
 
-static void event_handler_cb_setting_alarm_obj53(lv_event_t *e) {
+static void event_handler_cb_setting_alarm_obj52(lv_event_t *e) {
     lv_event_code_t event = lv_event_get_code(e);
     void *flowState = e->user_data;
     if (event == LV_EVENT_PRESSED) {
         flowPropagateValue(flowState, 7, 0);
+    }
+}
+
+static void event_handler_cb_setting_alarm_obj54(lv_event_t *e) {
+    lv_event_code_t event = lv_event_get_code(e);
+    void *flowState = e->user_data;
+    if (event == LV_EVENT_VALUE_CHANGED) {
+        lv_obj_t *ta = lv_event_get_target(e);
+        if (tick_value_change_obj != ta) {
+            int32_t value = lv_dropdown_get_selected(ta);
+            if (tick_value_change_obj != ta) {
+                assignIntegerProperty(flowState, 9, 4, value, "Failed to assign Selected in Dropdown widget");
+            }
+        }
     }
 }
 
@@ -2096,7 +2093,7 @@ void create_screen_alarm() {
         {
             lv_obj_t *obj = lv_label_create(parent_obj);
             objects.obj48 = obj;
-            lv_obj_set_pos(obj, 194, 244);
+            lv_obj_set_pos(obj, 32, 244);
             lv_obj_set_size(obj, LV_SIZE_CONTENT, LV_SIZE_CONTENT);
             lv_label_set_text(obj, "");
             apply_style_subtitle(obj);
@@ -2107,16 +2104,8 @@ void create_screen_alarm() {
             objects.obj49 = obj;
             lv_obj_set_pos(obj, 32, 200);
             lv_obj_set_size(obj, LV_SIZE_CONTENT, LV_SIZE_CONTENT);
-            lv_label_set_text(obj, "Duration");
+            lv_label_set_text(obj, "End");
             apply_style_subtitle(obj);
-        }
-        {
-            lv_obj_t *obj = lv_dropdown_create(parent_obj);
-            objects.obj50 = obj;
-            lv_obj_set_pos(obj, 28, 236);
-            lv_obj_set_size(obj, 150, LV_SIZE_CONTENT);
-            lv_dropdown_set_options(obj, "");
-            lv_obj_add_event_cb(obj, event_handler_cb_alarm_obj50, LV_EVENT_ALL, flowState);
         }
     }
 }
@@ -2209,34 +2198,6 @@ void tick_screen_alarm() {
             tick_value_change_obj = NULL;
         }
     }
-    {
-        bool new_val = evalBooleanProperty(flowState, 12, 3, "Failed to evaluate Hidden flag");
-        bool cur_val = lv_obj_has_flag(objects.obj50, LV_OBJ_FLAG_HIDDEN);
-        if (new_val != cur_val) {
-            tick_value_change_obj = objects.obj50;
-            if (new_val) lv_obj_add_flag(objects.obj50, LV_OBJ_FLAG_HIDDEN);
-            else lv_obj_clear_flag(objects.obj50, LV_OBJ_FLAG_HIDDEN);
-            tick_value_change_obj = NULL;
-        }
-    }
-    {
-        const char *new_val = evalStringArrayPropertyAndJoin(flowState, 12, 4, "Failed to evaluate Options in Dropdown widget", "\n");
-        const char *cur_val = lv_dropdown_get_options(objects.obj50);
-        if (strcmp(new_val, cur_val) != 0) {
-            tick_value_change_obj = objects.obj50;
-            lv_dropdown_set_options(objects.obj50, new_val);
-            tick_value_change_obj = NULL;
-        }
-    }
-    {
-        int32_t new_val = evalIntegerProperty(flowState, 12, 5, "Failed to evaluate Selected in Dropdown widget");
-        int32_t cur_val = lv_dropdown_get_selected(objects.obj50);
-        if (new_val != cur_val) {
-            tick_value_change_obj = objects.obj50;
-            lv_dropdown_set_selected(objects.obj50, new_val);
-            tick_value_change_obj = NULL;
-        }
-    }
 }
 
 void create_screen_setting_alarm() {
@@ -2293,10 +2254,10 @@ void create_screen_setting_alarm() {
         }
         {
             lv_obj_t *obj = lv_btn_create(parent_obj);
-            objects.obj51 = obj;
+            objects.obj50 = obj;
             lv_obj_set_pos(obj, 273, 21);
             lv_obj_set_size(obj, 74, 50);
-            lv_obj_add_event_cb(obj, event_handler_cb_setting_alarm_obj51, LV_EVENT_ALL, flowState);
+            lv_obj_add_event_cb(obj, event_handler_cb_setting_alarm_obj50, LV_EVENT_ALL, flowState);
             lv_obj_add_flag(obj, LV_OBJ_FLAG_SCROLL_ON_FOCUS);
             lv_obj_clear_flag(obj, LV_OBJ_FLAG_SCROLLABLE);
             apply_style_buttonback(obj);
@@ -2304,7 +2265,7 @@ void create_screen_setting_alarm() {
                 lv_obj_t *parent_obj = obj;
                 {
                     lv_obj_t *obj = lv_label_create(parent_obj);
-                    objects.obj52 = obj;
+                    objects.obj51 = obj;
                     lv_obj_set_pos(obj, 6, -1);
                     lv_obj_set_size(obj, LV_SIZE_CONTENT, LV_SIZE_CONTENT);
                     lv_label_set_text(obj, "");
@@ -2314,10 +2275,10 @@ void create_screen_setting_alarm() {
         }
         {
             lv_obj_t *obj = lv_btn_create(parent_obj);
-            objects.obj53 = obj;
+            objects.obj52 = obj;
             lv_obj_set_pos(obj, 9, 21);
             lv_obj_set_size(obj, 87, 50);
-            lv_obj_add_event_cb(obj, event_handler_cb_setting_alarm_obj53, LV_EVENT_ALL, flowState);
+            lv_obj_add_event_cb(obj, event_handler_cb_setting_alarm_obj52, LV_EVENT_ALL, flowState);
             lv_obj_add_flag(obj, LV_OBJ_FLAG_SCROLL_ON_FOCUS);
             lv_obj_clear_flag(obj, LV_OBJ_FLAG_SCROLLABLE);
             apply_style_buttonback(obj);
@@ -2325,13 +2286,21 @@ void create_screen_setting_alarm() {
                 lv_obj_t *parent_obj = obj;
                 {
                     lv_obj_t *obj = lv_label_create(parent_obj);
-                    objects.obj54 = obj;
+                    objects.obj53 = obj;
                     lv_obj_set_pos(obj, 17, -1);
                     lv_obj_set_size(obj, LV_SIZE_CONTENT, LV_SIZE_CONTENT);
                     lv_label_set_text(obj, "");
                     apply_style_icon(obj);
                 }
             }
+        }
+        {
+            lv_obj_t *obj = lv_dropdown_create(parent_obj);
+            objects.obj54 = obj;
+            lv_obj_set_pos(obj, 43, 376);
+            lv_obj_set_size(obj, 283, LV_SIZE_CONTENT);
+            lv_dropdown_set_options(obj, "");
+            lv_obj_add_event_cb(obj, event_handler_cb_setting_alarm_obj54, LV_EVENT_ALL, flowState);
         }
     }
 }
@@ -2376,19 +2345,37 @@ void tick_screen_setting_alarm() {
     }
     {
         const char *new_val = evalTextProperty(flowState, 6, 3, "Failed to evaluate Text in Label widget");
-        const char *cur_val = lv_label_get_text(objects.obj52);
+        const char *cur_val = lv_label_get_text(objects.obj51);
         if (strcmp(new_val, cur_val) != 0) {
-            tick_value_change_obj = objects.obj52;
-            lv_label_set_text(objects.obj52, new_val);
+            tick_value_change_obj = objects.obj51;
+            lv_label_set_text(objects.obj51, new_val);
             tick_value_change_obj = NULL;
         }
     }
     {
         const char *new_val = evalTextProperty(flowState, 8, 3, "Failed to evaluate Text in Label widget");
-        const char *cur_val = lv_label_get_text(objects.obj54);
+        const char *cur_val = lv_label_get_text(objects.obj53);
+        if (strcmp(new_val, cur_val) != 0) {
+            tick_value_change_obj = objects.obj53;
+            lv_label_set_text(objects.obj53, new_val);
+            tick_value_change_obj = NULL;
+        }
+    }
+    {
+        const char *new_val = evalStringArrayPropertyAndJoin(flowState, 9, 3, "Failed to evaluate Options in Dropdown widget", "\n");
+        const char *cur_val = lv_dropdown_get_options(objects.obj54);
         if (strcmp(new_val, cur_val) != 0) {
             tick_value_change_obj = objects.obj54;
-            lv_label_set_text(objects.obj54, new_val);
+            lv_dropdown_set_options(objects.obj54, new_val);
+            tick_value_change_obj = NULL;
+        }
+    }
+    {
+        int32_t new_val = evalIntegerProperty(flowState, 9, 4, "Failed to evaluate Selected in Dropdown widget");
+        int32_t cur_val = lv_dropdown_get_selected(objects.obj54);
+        if (new_val != cur_val) {
+            tick_value_change_obj = objects.obj54;
+            lv_dropdown_set_selected(objects.obj54, new_val);
             tick_value_change_obj = NULL;
         }
     }

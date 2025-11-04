@@ -27,8 +27,8 @@
 #define MCLKPIN             16
 #define BCLKPIN              9
 #define WSPIN               45
-#define DOPIN               10
-#define DIPIN                8
+#define DOPIN                8  // Audio output ke speaker
+#define DIPIN               10  // Audio input dari mic
 #define PA                  46
 
 // SD

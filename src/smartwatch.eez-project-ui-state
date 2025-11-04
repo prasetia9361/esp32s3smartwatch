@@ -1,11 +1,11 @@
 {
   "navigation": {
-    "selectedUserPageObject": "[smartwatch.eez-project]:/userPages/8",
-    "selectedGlobalVariableObject": "[smartwatch.eez-project]:/variables/globalVariables/-1",
+    "selectedUserPageObject": "[smartwatch.eez-project]:/userPages/9",
+    "selectedGlobalVariableObject": "[smartwatch.eez-project]:/variables/globalVariables/26",
     "selectedFontObject": "[smartwatch.eez-project]:/fonts/3",
     "selectedBitmapObject": "[smartwatch.eez-project]:/bitmaps/1",
     "subnavigationSelectedItems": {
-      "variables-tab/sub-navigation/selected-item": "Local"
+      "variables-tab/sub-navigation/selected-item": "Global"
     }
   },
   "layoutModel": {
@@ -67,7 +67,7 @@
           {
             "type": "border",
             "selected": 0,
-            "size": 133.5,
+            "size": 307.15625,
             "location": "bottom",
             "children": [
               {
@@ -151,7 +151,7 @@
                 {
                   "type": "tabset",
                   "id": "#1d9ecba4-690f-4f60-859f-ff602ad4ad9e",
-                  "weight": 1.1300130443427956,
+                  "weight": 0.7659082986268558,
                   "enableClose": false,
                   "children": [
                     {
@@ -162,13 +162,12 @@
                       "enableClose": false,
                       "icon": "svg:hierarchy"
                     }
-                  ],
-                  "active": true
+                  ]
                 },
                 {
                   "type": "tabset",
                   "id": "#a44ebcbd-12a1-4a56-bb3a-9b15fd74aedf",
-                  "weight": 0.8601880649678985,
+                  "weight": 1.2242928106838378,
                   "enableClose": false,
                   "children": [
                     {
@@ -193,10 +192,10 @@
                 {
                   "type": "tab",
                   "id": "#da5d835d-1b67-46c7-b529-22f7036de115",
-                  "name": "alarm",
+                  "name": "setting alarm",
                   "component": "editor",
                   "config": {
-                    "objectPath": "[smartwatch.eez-project]:/userPages/8",
+                    "objectPath": "[smartwatch.eez-project]:/userPages/9",
                     "permanent": false
                   },
                   "icon": "svg:page"
@@ -224,7 +223,8 @@
                   },
                   "icon": "material:settings"
                 }
-              ]
+              ],
+              "active": true
             },
             {
               "type": "row",
@@ -463,10 +463,21 @@
               "type": "tabset",
               "id": "RUNTIME-EDITORS",
               "weight": 60,
-              "selected": -1,
               "enableDeleteWhenEmpty": false,
               "enableClose": false,
-              "children": [],
+              "children": [
+                {
+                  "type": "tab",
+                  "id": "#e77a9e4d-466a-40a0-b617-fe5df46d2916",
+                  "name": "Main",
+                  "component": "editor",
+                  "config": {
+                    "objectPath": "[smartwatch.eez-project]:/userPages/0",
+                    "permanent": false
+                  },
+                  "icon": "svg:page"
+                }
+              ],
               "active": true
             },
             {
@@ -934,17 +945,14 @@
     "[smartwatch.eez-project]:/userPages/0[flow-state]": {
       "selection": {
         "0": {
-          "1": {
-            "2": {}
-          },
-          "2": {}
+          "4": {}
         },
         "2": {}
       },
       "transform": {
         "translate": {
           "x": -332.66666666666663,
-          "y": -267.08333333333326
+          "y": -268.08333333333326
         },
         "scale": 1
       },
@@ -994,7 +1002,7 @@
       "transform": {
         "translate": {
           "x": -383,
-          "y": -431
+          "y": -231
         },
         "scale": 1
       },
@@ -1063,14 +1071,17 @@
       "selection": {
         "0": {
           "0": {},
-          "2": {}
+          "2": {
+            "$selected": true
+          },
+          "3": {}
         },
         "1": {}
       },
       "transform": {
         "translate": {
-          "x": -184,
-          "y": -124
+          "x": -241,
+          "y": -213
         },
         "scale": 1
       },
@@ -1086,17 +1097,20 @@
         "0": {
           "0": {
             "3": {},
-            "9": {},
-            "$selected": true
+            "8": {},
+            "9": {}
           }
         },
         "1": {},
-        "4": {}
+        "4": {},
+        "5": {
+          "$selected": true
+        }
       },
       "transform": {
         "translate": {
-          "x": -370.6600000000001,
-          "y": -189.73749999999978
+          "x": -552,
+          "y": -4.5
         },
         "scale": 1
       },
@@ -1145,17 +1159,20 @@
     "[smartwatch.eez-project]:/userPages/8[flow-state]": {
       "selection": {
         "0": {
-          "2": {},
-          "3": {
-            "$selected": true
-          }
+          "0": {},
+          "4": {
+            "1": {}
+          },
+          "5": {}
         },
-        "3": {}
+        "3": {
+          "$selected": true
+        }
       },
       "transform": {
         "translate": {
-          "x": -238.00000023841858,
-          "y": -128
+          "x": -285.5,
+          "y": -306.5
         },
         "scale": 1
       },
@@ -1172,15 +1189,16 @@
           "0": {},
           "1": {},
           "4": {},
-          "5": {}
+          "5": {},
+          "6": {}
         },
         "1": {},
         "2": {}
       },
       "transform": {
         "translate": {
-          "x": -327.8333282470703,
-          "y": -183
+          "x": -374,
+          "y": -207.5
         },
         "scale": 1
       },
@@ -1326,8 +1344,8 @@
   "showComponentDescriptions": true,
   "logsPanelFilter": "all",
   "selectedStylePropertyName": "",
-  "lvglPart": "SELECTED",
-  "lvglState": "CHECKED",
+  "lvglPart": "MAIN",
+  "lvglState": "PRESSED",
   "lvglExpandedPropertiesGroup": [
     "TEXT",
     "MISCELLANEOUS",
@@ -1336,8 +1354,6 @@
     "SHADOW",
     "LAYOUT",
     "MARGIN",
-    "BACKGROUND",
-    "BORDER",
     "OUTLINE",
     "ARC",
     "LINE",

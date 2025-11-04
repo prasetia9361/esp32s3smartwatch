@@ -1,13 +1,15 @@
 #include <math.h>
 #include <Wire.h>
+#include <cstring> // <- add for memcmp/strcmp
+
+#ifndef PI
+#define PI 3.14159265358979323846
+#endif
 
 #include "config.h"
-#include "i2sConfig.h"
 #include "lvgl_setup.h"
-// #include "communication/communication.h"
-// #include "controll/contoll.h"
+
 #include "wifiSetup/wifi_setup.h"
-// #include "rtcTime/rtc_time.h"
 #include "SensorPCF85063.hpp"
 #include "ntpSetup/ntp_setup.h"
 #include "batteryMonitor/battery_monitor.h"
@@ -16,11 +18,98 @@
 #include "storage/storage.h"
 #include "memory/memory.h"
 #include "clientServer/clientServer.h"
-#include "speaker.h"
-// #include "webapp/web.h"
-#include "pin_config.h"
 #include "ui.h"
 #include "vars.h"
+
+
+#include "pin_config.h"
+#include "ESP_I2S.h"
+I2SClass i2s;
+
+#include "esp_check.h"
+#include "es8311.h"
+#include "canon.h"
+
+#define EXAMPLE_SAMPLE_RATE 16000
+#define EXAMPLE_VOICE_VOLUME 80                  // 0 - 100
+#define EXAMPLE_MIC_GAIN (es8311_mic_gain_t)(3)  // 0 - 7
+
+const char *TAG = "esp32p4_i2s_es8311";
+
+// Mutex untuk melindungi akses I2C
+SemaphoreHandle_t i2c_mutex = NULL;
+
+esp_err_t es8311_codec_init(void) {
+  USBSerial.println("Initializing ES8311 codec...");
+  
+  // Ambil mutex I2C sebelum akses
+  if (i2c_mutex != NULL && xSemaphoreTake(i2c_mutex, pdMS_TO_TICKS(1000)) == pdTRUE) {
+    // Scan I2C untuk mencari ES8311 (address 0x18)
+    Wire.beginTransmission(0x18); // ES8311_ADDRRES_0 = 0x18
+    byte error = Wire.endTransmission();
+    
+    xSemaphoreGive(i2c_mutex); // Lepas mutex
+    
+    if (error != 0) {
+      USBSerial.printf("ES8311 not found at I2C address 0x18, error: %d\n", error);
+      return ESP_FAIL;
+    }
+  } else {
+    USBSerial.println("Failed to acquire I2C mutex for ES8311 scan");
+    return ESP_FAIL;
+  }
+  USBSerial.println("ES8311 device found on I2C bus");
+  
+  es8311_handle_t es_handle = es8311_create(0, ES8311_ADDRRES_0);
+  if (!es_handle) {
+    USBSerial.println("ES8311 create failed");
+    return ESP_FAIL;
+  }
+  
+  const es8311_clock_config_t es_clk = {
+    .mclk_inverted = false,
+    .sclk_inverted = false,
+    .mclk_from_mclk_pin = true,
+    .mclk_frequency = EXAMPLE_SAMPLE_RATE * 256,
+    .sample_frequency = EXAMPLE_SAMPLE_RATE
+  };
+
+  // Gunakan error handling yang lebih soft tanpa ESP_ERROR_CHECK
+  esp_err_t err = es8311_init(es_handle, &es_clk, ES8311_RESOLUTION_16, ES8311_RESOLUTION_16);
+  if (err != ESP_OK) {
+    USBSerial.printf("ES8311 init failed: %s\n", esp_err_to_name(err));
+    return err;
+  }
+  
+  err = es8311_sample_frequency_config(es_handle, es_clk.mclk_frequency, es_clk.sample_frequency);
+  if (err != ESP_OK) {
+    USBSerial.printf("ES8311 sample frequency config failed: %s\n", esp_err_to_name(err));
+    return err;
+  }
+  
+  err = es8311_microphone_config(es_handle, false);
+  if (err != ESP_OK) {
+    USBSerial.printf("ES8311 microphone config failed: %s\n", esp_err_to_name(err));
+    return err;
+  }
+  
+  // Enable output (DAC) untuk speaker
+  err = es8311_voice_volume_set(es_handle, EXAMPLE_VOICE_VOLUME, NULL);
+  if (err != ESP_OK) {
+    USBSerial.printf("ES8311 volume set failed: %s\n", esp_err_to_name(err));
+    return err;
+  }
+  USBSerial.printf("ES8311 volume set to: %d\n", EXAMPLE_VOICE_VOLUME);
+  
+  err = es8311_microphone_gain_set(es_handle, EXAMPLE_MIC_GAIN);
+  if (err != ESP_OK) {
+    USBSerial.printf("ES8311 microphone gain set failed: %s\n", esp_err_to_name(err));
+    return err;
+  }
+  
+  USBSerial.println("ES8311 codec initialized successfully");
+  return ESP_OK;
+}
 
 
 HWCDC USBSerial;
@@ -37,10 +126,10 @@ BatteryMonitor *battery;
 SensorQMI8658 sensorStepper;
 StepCounter *stepCounter;
 
-speaker *mOutput;
 
 void applyWiFiMode(void *param);
 void applySensor(void *param);
+void controlAlarmTask(void *param);
 // --- MODIFIKASI: Deklarasi fungsi untuk task alarm baru ---
 void controlAlarmTask(void *param); 
 
@@ -57,7 +146,22 @@ extern void setDateTime(uint16_t* dt, size_t len);
 extern uint16_t *getDateTime();
 extern int32_t getBatteryPersentage();
 extern int isStep();
-
+extern bool getSaveAlarm();
+extern void setSaveAlarm(bool data);
+extern bool gethidenAlaram();
+extern const char *getStartTime();
+extern const char *getEndTime();
+extern void timeAlarm(int32_t *data, size_t len );
+extern void setScheduleTime(const char *startTime, const char *endTime);
+extern void fileAudio(const char **data, size_t len);
+extern bool playAlarm();
+extern bool playAudio();
+extern const char *getFileAudioSelected();
+extern bool getSetAlarm();
+extern void setPlayAlarm(bool data);
+extern const char *getNama();
+extern int32_t getUsia();
+extern int32_t getBB();
 
 int lastDay = -1;
 int currentDay = -1;
@@ -71,6 +175,10 @@ bool isWifi = false;
 bool wifi = false;
 bool lastSaveDate = false;
 bool isAlarmActive = false;
+bool isAlarm = false;
+bool setAlarm = false;
+bool saveAlarm = false;
+bool hiddenAlarm = false;
 unsigned long lastStatusPrint = 0;
 
 // --- MODIFIKASI: Pindahkan variabel alarm ke scope global agar bisa diakses oleh task alarm ---
@@ -156,8 +264,6 @@ bool isWithinSchedule(const char *startHHMM, const char *endHHMM)
     int end = parseHHMM(endHHMM);
     if (start < 0 || end < 0)
         return true; // invalid => treat as always active
-    if (start == end)
-        return true; // full day
     if (isNtp)
     {
       struct tm timeinfo;
@@ -165,86 +271,36 @@ bool isWithinSchedule(const char *startHHMM, const char *endHHMM)
           return false;
       }
       current = timeinfo.tm_hour * 60 + timeinfo.tm_min;
+      if (!setAlarm)
+      {
+        int32_t setTime[2] = {timeinfo.tm_hour, timeinfo.tm_min};
+        timeAlarm(setTime, 2);
+      }
+      
     }else
     {
       RTC_DateTime now = rtc.getDateTime();
       current = now.hour * 60 + now.minute;
+      if (!setAlarm)
+      {
+        int32_t setTime[2] = {now.hour, now.minute};
+        timeAlarm(setTime, 2);
+      }
     }
+    if (start == end)
+        return true; // full day
     if (start < end)
       return current >= start && current < end;
     // crosses midnight
     return current >= start || current < end;
 }
 
-// --- MODIFIKASI: Fungsi controlAlarm diubah menjadi task mandiri ---
-void controlAlarmTask(void *param) {
-    bool isPlaying = false;
-
-    while (true) {
-        // Cek apakah ada sinyal alarm BARU yang masuk
-        if (isAlarmActive) {
-            // 1. Langsung reset flag setelah sinyal diterima.
-            // Ini memastikan kita hanya memproses pemicu ini satu kali.
-            isAlarmActive = false; 
-
-            // 2. Hanya perpanjang alarm jika sedang tidak diputar.
-            // Jika sedang diputar, biarkan saja selesai.
-            if (!isPlaying) {
-                alarmUntil = millis() + 6000UL;
-            }
-        }
-
-        bool shouldBePlaying = (long)(millis() - alarmUntil) < 0;
-
-        if (shouldBePlaying && !isPlaying) {
-            // --- ALARM MULAI AKTIF ---
-            isPlaying = true;
-            USBSerial.printf("[Control] Window:ON Alarm:TRIGGER Start:%s End:%s\n",
-                STORAGE.getStartTime(), STORAGE.getEndTime());
-            
-            mOutput->startSpeaker(); 
-
-            File audioFile = memory->openFile("/audio2.wav");
-            if (audioFile && !audioFile.isDirectory()) {
-                const size_t bufferSize = 512;
-                uint8_t buffer[bufferSize];
-                size_t bytesRead;
-
-                audioFile.seek(44); // Lewati header WAV
-
-                // Loop pemutaran sampai file selesai, BUKAN berdasarkan alarmUntil
-                while (audioFile.available()) {
-                    bytesRead = audioFile.read(buffer, bufferSize);
-                    for (size_t i = 0; i < bytesRead; i++) {
-                      USBSerial.printf("%02X ", buffer[i]);
-                    }
-                    if (bytesRead > 0) {
-                      USBSerial.printf("[Control] Playing audio chunk of size: %d bytes\n", bytesRead);
-                    } else {
-                        break; // Akhir file
-                    }
-                }
-                audioFile.close();
-            } else {
-                USBSerial.println("Failed to open /audio2.wav");
-            }
-
-            mOutput->stopAudio();
-            USBSerial.println("[Control] Alarm:IDLE");
-            
-            // 3. Reset state setelah selesai
-            isPlaying = false;
-            alarmUntil = 0; 
-        }
-
-        vTaskDelay(pdMS_TO_TICKS(50));
-    }
-}
-
 
 void setup() {
   USBSerial.begin(115200);
+  USBSerial.setDebugOutput(true);
   delay(1000);
+  // pinMode(0, INPUT_PULLUP); // Button off alarm
 
   // --- PERBAIKAN: Pindahkan inisialisasi objek ke atas ---
   wifiSetup = new WifiSetup();
@@ -252,9 +308,14 @@ void setup() {
   webServer = new clientServer(memory);
   stepCounter = new StepCounter();
   battery = new BatteryMonitor();
-  mOutput = new speaker(i2sPort,i2sPins,i2s_speaker_config,256);
-  samples = (int16_t *)malloc(sizeof(int16_t) * BYTE_RATE);
   // ---------------------------------------------------------
+
+  // Initialize I2C mutex
+  i2c_mutex = xSemaphoreCreateMutex();
+  if (i2c_mutex == NULL) {
+      USBSerial.println("Failed to create I2C mutex!");
+      while(1) delay(100);
+  }
 
   // Initialize hardware
   while (!initializeHardware()) {
@@ -267,6 +328,7 @@ void setup() {
   USBSerial.println("LVGL initialized");
   ui_init();
   USBSerial.println("UI initialized");
+
 
   TaskHandle_t wifiTaskHandle;
   xTaskCreatePinnedToCore(
@@ -282,7 +344,7 @@ void setup() {
   xTaskCreatePinnedToCore(
       applySensor,     
       "sensorTask",    
-      4096,            
+      8192,            // Increase stack untuk LVGL
       NULL,            
       1,               
       &sensorTaskHandle,
@@ -293,11 +355,11 @@ void setup() {
   xTaskCreatePinnedToCore(
       controlAlarmTask,
       "alarmTask",
-      8192,             // Stack mungkin perlu besar untuk file I/O
+      16384,            // Increase stack size untuk audio processing (16KB)
       NULL,
-      2,                // Prioritas sama dengan WiFi
+      1,                // Sama dengan sensor task untuk menghindari konflik
       &alarmTaskHandle,
-      1);               // Bisa di core 1 juga
+      0);               // Core 0 untuk menghindari konflik I2C di core 1
 }
 
 void loop() {
@@ -306,11 +368,6 @@ void loop() {
 
 void applyWiFiMode(void *param){
   bool wifiAP = false;
-
-  if (!STORAGE.init())
-  {
-      USBSerial.println(F("[Storage] init failed"));
-  }
 
   while (true)
   {
@@ -371,15 +428,44 @@ void applyWiFiMode(void *param){
 }
 
 void applySensor(void *param){
-  Wire.begin(IIC_SDA,IIC_SCL);
-  bool powerResult = power.begin(Wire, AXP2101_SLAVE_ADDRESS, IIC_SDA, IIC_SCL);
-  if (!powerResult) {
-      USBSerial.println("PMU initialization failed!");
+  // Tunggu mutex tersedia dan UI flow siap
+  vTaskDelay(pdMS_TO_TICKS(500));
+  
+  // Inisialisasi STORAGE dan load schedule
+  if (!STORAGE.init())
+  {
+      USBSerial.println(F("[Storage] init failed"));
   } else {
-      power.disableIRQ(XPOWERS_AXP2101_ALL_IRQ);
-      power.setChargeTargetVoltage(3);
-      power.clearIrqStatus();
-      power.enableIRQ(XPOWERS_AXP2101_PKEY_SHORT_IRQ);
+      // Load schedule dari storage dan set ke flow variables
+      USBSerial.println(F("[Storage] Loading saved schedule..."));
+      const char *savedStart = STORAGE.getStartTime();
+      const char *savedEnd = STORAGE.getEndTime();
+      
+      USBSerial.print("Saved Start Time: ");
+      USBSerial.println(savedStart);
+      USBSerial.print("Saved End Time: ");
+      USBSerial.println(savedEnd);
+      
+      // Set ke flow variables (UI harus sudah ready di sini)
+      setScheduleTime(savedStart, savedEnd);
+  }
+  
+  if (i2c_mutex != NULL && xSemaphoreTake(i2c_mutex, pdMS_TO_TICKS(1000)) == pdTRUE) {
+    Wire.begin(IIC_SDA,IIC_SCL);
+    bool powerResult = power.begin(Wire, AXP2101_SLAVE_ADDRESS, IIC_SDA, IIC_SCL);
+    
+    if (!powerResult) {
+        USBSerial.println("PMU initialization failed!");
+    } else {
+        power.disableIRQ(XPOWERS_AXP2101_ALL_IRQ);
+        power.setChargeTargetVoltage(3);
+        power.clearIrqStatus();
+        power.enableIRQ(XPOWERS_AXP2101_PKEY_SHORT_IRQ);
+    }
+    
+    xSemaphoreGive(i2c_mutex);
+  } else {
+    USBSerial.println("Failed to acquire I2C mutex in sensor task");
   }
 
   if (!battery->init(&power)) {
@@ -388,22 +474,30 @@ void applySensor(void *param){
       USBSerial.println("Battery monitor initialized");
   }
   
-  if (!rtc.begin(Wire, PCF85063_SLAVE_ADDRESS, IIC_SDA, IIC_SCL)) {
-    USBSerial.println("Failed to find PCF8563 - check your wiring!");
-  } else {
-    USBSerial.println("Success to find PCF8563");
-    // Set waktu default sekali saja
-    rtc.setDateTime(2025, 10, 18, 0, 0, 0);
+  // Inisialisasi RTC dengan proteksi mutex
+  if (i2c_mutex != NULL && xSemaphoreTake(i2c_mutex, pdMS_TO_TICKS(1000)) == pdTRUE) {
+    if (!rtc.begin(Wire, PCF85063_SLAVE_ADDRESS, IIC_SDA, IIC_SCL)) {
+      USBSerial.println("Failed to find PCF8563 - check your wiring!");
+    } else {
+      USBSerial.println("Success to find PCF8563");
+      // Set waktu default sekali saja
+      rtc.setDateTime(2025, 10, 18, 0, 0, 0);
+    }
+    xSemaphoreGive(i2c_mutex);
   }
 
-  bool qmiResult = sensorStepper.begin(Wire, QMI8658_L_SLAVE_ADDRESS, IIC_SDA, IIC_SCL);
-  if (!qmiResult) {
-    USBSerial.println("QMI8658 initialization failed!");
-  } else {
-    sensorStepper.configAccelerometer(SensorQMI8658::ACC_RANGE_4G, 
-                          SensorQMI8658::ACC_ODR_1000Hz, 
-                          SensorQMI8658::LPF_MODE_0);
-    sensorStepper.enableAccelerometer();
+  // Inisialisasi QMI8658 dengan proteksi mutex
+  if (i2c_mutex != NULL && xSemaphoreTake(i2c_mutex, pdMS_TO_TICKS(1000)) == pdTRUE) {
+    bool qmiResult = sensorStepper.begin(Wire, QMI8658_L_SLAVE_ADDRESS, IIC_SDA, IIC_SCL);
+    if (!qmiResult) {
+      USBSerial.println("QMI8658 initialization failed!");
+    } else {
+      sensorStepper.configAccelerometer(SensorQMI8658::ACC_RANGE_4G, 
+                            SensorQMI8658::ACC_ODR_1000Hz, 
+                            SensorQMI8658::LPF_MODE_0);
+      sensorStepper.enableAccelerometer();
+    }
+    xSemaphoreGive(i2c_mutex);
   }
 
   if (!stepCounter->init(&sensorStepper)) {
@@ -419,6 +513,17 @@ void applySensor(void *param){
   {
     lvgl_handler();
     ui_tick();
+
+    isWifiAP = switchWiFiAP();
+    isWifi = switchWiFi();
+    isAlarm = playAlarm();
+    saveAlarm  = getSaveAlarm();
+    hiddenAlarm = gethidenAlaram();
+    setAlarm = getSetAlarm();
+    const char *startTime = getStartTime();
+    const char *endTime = getEndTime();
+
+    // mButton->tick();
     stepDetected = isStep(); // Baca status step di dalam perlindungan mutex
     stepCounter->handleButton(stepDetected);
     battery->update();
@@ -436,17 +541,64 @@ void applySensor(void *param){
     setBT(battery->getBatteryPercentage());
     setStep(stepCounter->getStepCount());
 
-    isWifiAP = switchWiFiAP();
-    isWifi = switchWiFi();
-
-    // --- MODIFIKASI: Logika pemicu alarm ---
-    if (isWithinSchedule(STORAGE.getStartTime(), STORAGE.getEndTime()) && stepDetected) {
-        // Jika ada gerakan dalam window aktif, kirim sinyal ke task alarm
+    if (saveAlarm && !isAlarm)
+    {
+      USBSerial.print("saveAlarm : ");
+      USBSerial.println(saveAlarm);
+      USBSerial.print("isAlarm : ");
+      USBSerial.println(isAlarm);
+      USBSerial.print("setAlarm : ");
+      USBSerial.println(setAlarm);
+      
+      // Debug: Tampilkan nilai startTime dan endTime
+      USBSerial.print("startTime : ");
+      USBSerial.println(startTime ? startTime : "NULL");
+      USBSerial.print("endTime : ");
+      USBSerial.println(endTime ? endTime : "NULL");
+      
+      // Validasi sebelum save
+      if (startTime == NULL || endTime == NULL) {
+        USBSerial.println("ERROR: startTime or endTime is NULL!");
+        saveAlarm = false;
+        setSaveAlarm(saveAlarm);
+      } else if (strlen(startTime) != 5 || strlen(endTime) != 5) {
+        USBSerial.printf("ERROR: Invalid time format - startTime: '%s' (len=%d), endTime: '%s' (len=%d)\n", 
+                         startTime, strlen(startTime), endTime, strlen(endTime));
+        saveAlarm = false;
+        setSaveAlarm(saveAlarm);
+      } else {
+        USBSerial.printf("Attempting to save schedule: %s - %s\n", startTime, endTime);
+        if (STORAGE.saveSchedule(startTime, endTime))
+        {
+          USBSerial.println("saved successfully");
+          saveAlarm = false;
+          setSaveAlarm(saveAlarm);
+        } else {
+          USBSerial.println("ERROR: STORAGE.saveSchedule() returned false!");
+          saveAlarm = false;
+          setSaveAlarm(saveAlarm);
+        }
+      }
+    }else{
+          // --- MODIFIKASI: Logika pemicu alarm ---
+      if (isWithinSchedule(STORAGE.getStartTime(), STORAGE.getEndTime()) && isAlarm)
+      {
+        // if (mButton->longPress())
+        // {
+        //   USBSerial.println("Button long press detected - turning off alarm");
+        //   setPlayAlarm(false);
+        //   isAlarm = false;
+        //   mButton->setRemove(false);
+        //   // isAlarmActive = false;
+        // }
+        USBSerial.println("turning on alarm");
         isAlarmActive = true;
-    } else {
-        // 4. Tambahkan else untuk memastikan flag tidak 'macet' jika kondisi tidak terpenuhi lagi
-        // (Meskipun sudah di-handle di alarm task, ini adalah praktik yang baik)
-        // isAlarmActive = false; // Baris ini opsional karena sudah di-handle di alarm task
+      }else
+      {
+        // USBSerial.println("isAlarmActive false");
+        isAlarmActive = false;
+      }
+
     }
 
     if (isNtp) {
@@ -459,6 +611,10 @@ void applySensor(void *param){
 
       if (currentDay != lastDay) {
         setCurrentDate((CURRENT_DATE).c_str());
+        if (!saveAlarm && !hiddenAlarm)
+        {
+          setPlayAlarm(true);
+        }
         lastDay = currentDay;
       }
     } else {
@@ -499,6 +655,10 @@ void applySensor(void *param){
                 weekdays[currentDay], dt.day, dt.month, dt.year);
         if (currentDay != lastDay) {
           setCurrentDate(dateStr);
+          if (!saveAlarm && !hiddenAlarm)
+          {
+            setPlayAlarm(true);
+          }
           lastDay = currentDay;
         }
       }
@@ -509,4 +669,152 @@ void applySensor(void *param){
     
     vTaskDelay(5);
   }
+}
+
+// --- MODIFIKASI: Fungsi controlAlarm diubah menjadi task mandiri ---
+void controlAlarmTask(void *param) {
+    bool isPlaying = false;
+    bool audioInitialized = false;
+    
+    // Tunggu hingga hardware sepenuhnya terinisialisasi
+    // Delay lebih lama untuk memastikan semua task lain sudah running
+    USBSerial.println("[Audio] Alarm task started, waiting for system ready...");
+    vTaskDelay(pdMS_TO_TICKS(5000));  // 5 detik
+    
+    USBSerial.println("[Audio] System ready, initializing audio...");
+    
+    // Enable PA (Power Amplifier) pin
+    pinMode(PA, OUTPUT);
+    digitalWrite(PA, HIGH);  // Enable amplifier
+    USBSerial.println("PA (Power Amplifier) enabled");
+    
+    USBSerial.println("Starting audio initialization...");
+    
+    // Setup I2S dengan SEMUA pin termasuk MCLK
+    i2s.setPins(BCLKPIN, WSPIN, DOPIN, DIPIN, MCLKPIN);
+    
+    if (i2s.begin(I2S_MODE_STD, EXAMPLE_SAMPLE_RATE, I2S_DATA_BIT_WIDTH_16BIT, I2S_SLOT_MODE_STEREO, I2S_STD_SLOT_BOTH)) {
+        USBSerial.println("I2S initialized successfully");
+        
+        // Coba inisialisasi ES8311 dengan error handling
+        esp_err_t codec_result = es8311_codec_init();
+        if (codec_result == ESP_OK) {
+            USBSerial.println("ES8311 codec initialized successfully");
+            audioInitialized = true;
+            
+            // Test tone kecil - 100ms beep untuk verify audio output bekerja
+            USBSerial.println("Playing test tone (100ms)...");
+            const int testDuration = EXAMPLE_SAMPLE_RATE / 10; // 100ms
+            int16_t *testTone = (int16_t*)malloc(testDuration * 2 * sizeof(int16_t));
+            
+            if (testTone) {
+                for (int i = 0; i < testDuration; i++) {
+                    // Generate 440Hz sine wave (A note)
+                    float sample = sin(2.0 * PI * 440.0 * i / EXAMPLE_SAMPLE_RATE) * 10000;
+                    testTone[i * 2] = (int16_t)sample;     // Left channel
+                    testTone[i * 2 + 1] = (int16_t)sample; // Right channel
+                }
+                size_t written = i2s.write((uint8_t*)testTone, testDuration * 2 * sizeof(int16_t));
+                USBSerial.printf("Test tone sent: %d bytes\n", written);
+                free(testTone);
+                vTaskDelay(pdMS_TO_TICKS(200));
+            } else {
+                USBSerial.println("Failed to allocate memory for test tone");
+            }
+            
+        } else {
+            USBSerial.printf("ES8311 codec init failed: %s\n", esp_err_to_name(codec_result));
+            // Tetap set audioInitialized = true untuk test I2S tanpa codec
+            audioInitialized = true;
+        }
+    } else {
+        USBSerial.println("I2S initialization failed!");
+    }
+
+    while (true) {
+        // Monitor stack usage setiap loop
+        static unsigned long lastStackCheck = 0;
+        if (millis() - lastStackCheck > 10000) {  // Check every 10 seconds
+            UBaseType_t stackLeft = uxTaskGetStackHighWaterMark(NULL);
+            USBSerial.printf("[Audio] Stack high water mark: %d bytes free\n", stackLeft * 4);
+            lastStackCheck = millis();
+        }
+        
+        // Inisialisasi audio hanya saat pertama kali dibutuhkan
+        // if (isAlarmActive && !audioInitialized) {
+        //     pinMode(PA, OUTPUT);
+        //     digitalWrite(PA, HIGH);
+
+
+        // }
+      
+        if (isAlarmActive) {
+            isAlarmActive = false; 
+            if (!isPlaying) {
+                alarmUntil = millis() + 6000UL;
+            }
+        }
+
+        bool shouldBePlaying = (long)(millis() - alarmUntil) < 0;
+
+        if (shouldBePlaying && !isPlaying && audioInitialized) {
+            // --- ALARM MULAI AKTIF ---
+            isPlaying = true;
+            
+            // Pastikan PA masih HIGH
+            digitalWrite(PA, HIGH);
+            USBSerial.println("[Audio] PA enabled for playback");
+            
+            USBSerial.printf("[Control] Window:ON Alarm:TRIGGER Start:%s End:%s\n",
+                STORAGE.getStartTime(), STORAGE.getEndTime());
+            
+            USBSerial.printf("[Audio] Playing canon.pcm - Size: %d bytes\n", canon_pcm_len);
+            
+            // Kirim audio data dalam chunks untuk menghindari buffer overflow
+            const size_t CHUNK_SIZE = 2048; // 2KB per chunk (reduce dari 4KB)
+            size_t offset = 0;
+            size_t totalWritten = 0;
+            
+            while (isAlarm && audioInitialized && offset < canon_pcm_len) {
+                size_t remainingBytes = canon_pcm_len - offset;
+                size_t bytesToWrite = (remainingBytes > CHUNK_SIZE) ? CHUNK_SIZE : remainingBytes;
+                
+                // Write chunk ke I2S
+                size_t bytesWritten = i2s.write((uint8_t *)canon_pcm + offset, bytesToWrite);
+                
+                if (bytesWritten > 0) {
+                    offset += bytesWritten;
+                    totalWritten += bytesWritten;
+                    
+                    // Log progress setiap 50KB
+                    if (totalWritten % 51200 == 0) {
+                        USBSerial.printf("[Audio] Progress: %d/%d bytes (%.1f%%)\n", 
+                                        totalWritten, canon_pcm_len, 
+                                        (float)totalWritten * 100.0 / canon_pcm_len);
+                    }
+                } else {
+                    USBSerial.println("[Audio] Warning: No bytes written, retrying...");
+                    vTaskDelay(pdMS_TO_TICKS(10));
+                }
+                
+                // Check jika user mematikan alarm
+                if (!isAlarm) {
+                    USBSerial.println("[Audio] Alarm stopped by user");
+                    break;
+                }
+                
+                // Yield ke task lain
+                vTaskDelay(pdMS_TO_TICKS(1));
+            }
+            
+            USBSerial.printf("[Audio] Playback complete - Total written: %d bytes\n", totalWritten);
+            USBSerial.println("[Control] Alarm:IDLE");
+            
+            // Reset state setelah selesai
+            isPlaying = false;
+            alarmUntil = 0; 
+        }
+
+      vTaskDelay(pdMS_TO_TICKS(50));
+    }
 }
