@@ -1,25 +1,36 @@
 #include "memory.h"
 #include <Arduino.h>
+#include "esp_log.h"
+
+static const char *TAG_MEM = "Memory";
 
 Memory::Memory() : _isInitialized(false) {
 }
 
 bool Memory::begin(int clkPin, int cmdPin, int dataPin) {
-
     SD_MMC.setPins(clkPin, cmdPin, dataPin);
 
     if (!SD_MMC.begin("/sdcard", true)) {
+        ESP_LOGE(TAG_MEM, "SD_MMC.begin() failed");
         _isInitialized = false;
         return false;
     }
 
     uint8_t cardType = SD_MMC.cardType();
     if (cardType == CARD_NONE) {
+        ESP_LOGE(TAG_MEM, "No SD card detected");
         _isInitialized = false;
         return false;
     }
 
     _isInitialized = true;
+    
+    uint64_t cardSize = SD_MMC.cardSize() / (1024 * 1024);
+    ESP_LOGI(TAG_MEM, "SD card initialized - Size: %lluMB, Type: %s", 
+             cardSize, 
+             cardType == CARD_MMC ? "MMC" : 
+             cardType == CARD_SD ? "SD" : 
+             cardType == CARD_SDHC ? "SDHC" : "Unknown");
 
     return true;
 }
@@ -81,50 +92,59 @@ String Memory::listDir(const char *dirname, uint8_t levels) {
 
 String Memory::listDirJson(const char *dirname) {
     if (!_isInitialized) {
-        return "[]"; // Kembalikan array JSON kosong jika tidak terinisialisasi
+        ESP_LOGW(TAG_MEM, "SD card not initialized");
+        return "[]";
     }
 
     String json = "[";
     bool firstFile = true;
+    int fileCount = 0;
 
     File root = SD_MMC.open(dirname);
     if (!root || !root.isDirectory()) {
-        return "[]"; // Kembalikan array JSON kosong jika direktori tidak ada
+        ESP_LOGW(TAG_MEM, "Failed to open directory: %s", dirname);
+        return "[]";
     }
 
     File file = root.openNextFile();
     while (file) {
-        // Hanya proses file, abaikan direktori
         if (!file.isDirectory()) {
             if (!firstFile) {
-                json += ","; // Tambahkan koma sebelum elemen berikutnya
+                json += ",";
             }
             json += "\"" + String(file.name()) + "\"";
             firstFile = false;
+            fileCount++;
         }
         file = root.openNextFile();
     }
 
     json += "]";
+    ESP_LOGD(TAG_MEM, "Listed %d files from %s", fileCount, dirname);
     return json;
 }
 
-// Write complete buffer to file (overwrite)
 bool Memory::writeFile(const char* path, const uint8_t* buf, size_t size) {
     if (!_isInitialized) {
-        Serial.println("[Memory] writeFile: Not initialized!");
+        ESP_LOGE(TAG_MEM, "Cannot write - SD not initialized");
+        return false;
+    }
+
+    if (!buf || size == 0) {
+        ESP_LOGE(TAG_MEM, "Invalid buffer or size");
         return false;
     }
 
     // Remove existing file to ensure overwrite
     if (SD_MMC.exists(path)) {
-        SD_MMC.remove(path);
-        Serial.printf("[Memory] writeFile: Removed existing file: %s\n", path);
+        if (!SD_MMC.remove(path)) {
+            ESP_LOGW(TAG_MEM, "Failed to remove existing file: %s", path);
+        }
     }
 
     File file = SD_MMC.open(path, FILE_WRITE);
     if (!file) {
-        Serial.printf("[Memory] writeFile: Failed to open %s\n", path);
+        ESP_LOGE(TAG_MEM, "Failed to open file for writing: %s", path);
         return false;
     }
 
@@ -132,30 +152,34 @@ bool Memory::writeFile(const char* path, const uint8_t* buf, size_t size) {
     file.close();
 
     if (written != size) {
-        Serial.printf("[Memory] writeFile: Write incomplete %u/%u bytes to %s\n", written, size, path);
+        ESP_LOGE(TAG_MEM, "Write incomplete - expected %d, wrote %d bytes", size, written);
         return false;
     }
 
-    Serial.printf("[Memory] writeFile: Wrote %u bytes to %s\n", written, path);
+    ESP_LOGD(TAG_MEM, "File written: %s (%d bytes)", path, written);
     return true;
 }
 
-// Append buffer to file (creates if not exist)
 bool Memory::appendFile(const char* path, const uint8_t* buf, size_t size) {
     if (!_isInitialized) {
-        Serial.println("[Memory] appendFile: Not initialized!");
+        ESP_LOGE(TAG_MEM, "Cannot append - SD not initialized");
+        return false;
+    }
+
+    if (!buf || size == 0) {
+        ESP_LOGE(TAG_MEM, "Invalid buffer or size");
         return false;
     }
 
     File file = SD_MMC.open(path, FILE_APPEND);
     if (!file) {
-        // Fallback: try FILE_WRITE (some cores map FILE_APPEND to FILE_WRITE)
+        // Fallback: try FILE_WRITE
         file = SD_MMC.open(path, FILE_WRITE);
         if (!file) {
-            Serial.printf("[Memory] appendFile: Failed to open %s\n", path);
+            ESP_LOGE(TAG_MEM, "Failed to open file for append: %s", path);
             return false;
         }
-        // ensure we append
+        // Ensure we append
         file.seek(file.size());
     }
 
@@ -163,11 +187,11 @@ bool Memory::appendFile(const char* path, const uint8_t* buf, size_t size) {
     file.close();
 
     if (written != size) {
-        Serial.printf("[Memory] appendFile: Write incomplete %u/%u bytes to %s\n", written, size, path);
+        ESP_LOGE(TAG_MEM, "Append incomplete - expected %d, wrote %d bytes", size, written);
         return false;
     }
 
-    Serial.printf("[Memory] appendFile: Appended %u bytes to %s\n", written, path);
+    ESP_LOGD(TAG_MEM, "File appended: %s (+%d bytes)", path, written);
     return true;
 }
 
@@ -238,17 +262,14 @@ File Memory::openFile(const char* path) {
 
 int32_t Memory::totalFile() {
     if (!_isInitialized) {
-        // Serial.println("[Memory] totalFile: Not initialized!");
         return -1;
     }
 
     File root = SD_MMC.open("/");
     if (!root) {
-        // Serial.println("[Memory] totalFile: Failed to open root directory!");
         return -1;
     }
     if (!root.isDirectory()) {
-        // Serial.println("[Memory] totalFile: Root is not a directory!");
         root.close();
         return -1;
     }
@@ -263,7 +284,6 @@ int32_t Memory::totalFile() {
     }
     root.close();
 
-    // Serial.printf("[Memory] totalFile: Total files in root: %d\n", fileCount);
     return fileCount;
 }
 
@@ -306,19 +326,24 @@ bool Memory::streamFile(const char* path, Stream& dest, size_t chunkSize) {
     return true;
 }
 
-// Delete a specific file from SD card
 bool Memory::deleteFile(const char* path) {
     if (!_isInitialized) {
+        ESP_LOGE(TAG_MEM, "Cannot delete - SD not initialized");
         return false;
     }
 
-    // Check if file exists first
     if (!SD_MMC.exists(path)) {
+        ESP_LOGW(TAG_MEM, "File does not exist: %s", path);
         return false;
     }
 
-    // Try to delete the file
     bool success = SD_MMC.remove(path);
+    
+    if (success) {
+        ESP_LOGI(TAG_MEM, "File deleted: %s", path);
+    } else {
+        ESP_LOGE(TAG_MEM, "Failed to delete file: %s", path);
+    }
     
     return success;
 }
@@ -381,16 +406,15 @@ int Memory::read(const char* path, int16_t *samples, int maxSamples) {
     return samplesRead;
 }
 
-// Get WAV file data size (excluding 44-byte header)
 int32_t Memory::getWavDataSize(const char* path) {
     if (!_isInitialized) {
-        Serial.println("[Memory] getWavDataSize: Not initialized!");
+        ESP_LOGE(TAG_MEM, "Cannot get WAV size - SD not initialized");
         return -1;
     }
 
     File file = openFile(path);
     if (!file || file.isDirectory()) {
-        Serial.printf("[Memory] getWavDataSize: Failed to open %s\n", path);
+        ESP_LOGE(TAG_MEM, "Failed to open WAV file: %s", path);
         return -1;
     }
 
@@ -398,37 +422,36 @@ int32_t Memory::getWavDataSize(const char* path) {
     file.close();
 
     if (fileSize < 44) {
-        Serial.printf("[Memory] getWavDataSize: File too small (%d bytes)\n", fileSize);
+        ESP_LOGE(TAG_MEM, "Invalid WAV file (too small): %s", path);
         return -1;
     }
 
     // WAV data size = total file size - 44 byte header
     int32_t dataSize = fileSize - 44;
-    Serial.printf("[Memory] getWavDataSize: %s has %d bytes of audio data\n", path, dataSize);
+    ESP_LOGD(TAG_MEM, "WAV data size: %d bytes (%s)", dataSize, path);
     return dataSize;
 }
 
-// Read WAV audio data in chunks (skips 44-byte header)
 int32_t Memory::readWavChunk(const char* path, uint8_t* buffer, size_t offset, size_t length) {
     if (!_isInitialized) {
-        Serial.println("[Memory] readWavChunk: Not initialized!");
+        ESP_LOGE(TAG_MEM, "Cannot read WAV - SD not initialized");
         return -1;
     }
 
     if (!buffer) {
-        Serial.println("[Memory] readWavChunk: Buffer is NULL!");
+        ESP_LOGE(TAG_MEM, "Invalid buffer pointer");
         return -1;
     }
 
     File file = openFile(path);
     if (!file || file.isDirectory()) {
-        Serial.printf("[Memory] readWavChunk: Failed to open %s\n", path);
+        ESP_LOGE(TAG_MEM, "Failed to open WAV file: %s", path);
         return -1;
     }
 
     // Skip WAV header (44 bytes) + offset
     if (!file.seek(44 + offset)) {
-        Serial.printf("[Memory] readWavChunk: Failed to seek to position %d\n", 44 + offset);
+        ESP_LOGE(TAG_MEM, "Failed to seek in file: %s", path);
         file.close();
         return -1;
     }
@@ -438,7 +461,7 @@ int32_t Memory::readWavChunk(const char* path, uint8_t* buffer, size_t offset, s
     file.close();
 
     if (bytesRead < 0) {
-        Serial.printf("[Memory] readWavChunk: Read error\n");
+        ESP_LOGE(TAG_MEM, "Read error: %s", path);
         return -1;
     }
 

@@ -1,28 +1,30 @@
 #include "storage.h"
+#include "esp_log.h"
 
-Storage STORAGE; // definition
+static const char *TAG_STORAGE = "Storage";
 
-bool Storage::init()
-{
-    Serial.println("[SPIFFS] Initializing Storage");
-    if (!SPIFFS.begin(true))
-    {
-        Serial.println(F("[SPIFFS] Fail Begin SPIFFS"));
+Storage STORAGE;
+
+bool Storage::init() {
+    ESP_LOGI(TAG_STORAGE, "Initializing SPIFFS...");
+    
+    if (!SPIFFS.begin(true)) {
+        ESP_LOGE(TAG_STORAGE, "SPIFFS begin failed");
         return false;
     }
+    
     loadConfig();
-    Serial.println(F("[SPIFFS] Success Begin SPIFFS"));
+    ESP_LOGI(TAG_STORAGE, "SPIFFS initialized successfully");
     return true;
 }
 
-bool Storage::loadConfig()
-{
-    if (!SPIFFS.exists("/config.json"))
-    {
+bool Storage::loadConfig() {
+    if (!SPIFFS.exists("/config.json")) {
+        ESP_LOGI(TAG_STORAGE, "Config file not found, creating default...");
+        
         File file = SPIFFS.open("/config.json", FILE_WRITE);
-        if (!file)
-        {
-            Serial.println(F("[SPIFFS] Fail Open SPIFFS for writing"));
+        if (!file) {
+            ESP_LOGE(TAG_STORAGE, "Failed to create config file");
             return false;
         }
 
@@ -31,18 +33,15 @@ bool Storage::loadConfig()
         docConfig["wifiPassword"] = SSDID_AP_PASSWORD;
         docConfig["setFile"] = "";
         docConfig["start"] = "21:00";
-        
         docConfig["end"] = "00:45";
 
-        if (serializeJson(docConfig, file) == 0)
-        {
-            Serial.println(F("[SPIFFS] Fail Serialize Json"));
+        if (serializeJson(docConfig, file) == 0) {
+            ESP_LOGE(TAG_STORAGE, "Failed to serialize config");
             file.close();
             return false;
         }
 
         file.close();
-        Serial.println(F("[SPIFFS] Created default config file"));
 
         strlcpy(config.wifiAp, SSDID_AP, sizeof(config.wifiAp));
         strlcpy(config.wifiPassword, SSDID_AP_PASSWORD, sizeof(config.wifiPassword));
@@ -50,13 +49,13 @@ bool Storage::loadConfig()
         strlcpy(config.startTime, "21:00", sizeof(config.startTime));
         strlcpy(config.endTime, "00:45", sizeof(config.endTime));
 
+        ESP_LOGI(TAG_STORAGE, "Default config created");
         return true;
     }
 
     File file = SPIFFS.open("/config.json", FILE_READ);
-    if (!file)
-    {
-        Serial.println(F("[SPIFFS] Fail Open SPIFFS for reading"));
+    if (!file) {
+        ESP_LOGE(TAG_STORAGE, "Failed to open config file for reading");
         return false;
     }
 
@@ -64,9 +63,8 @@ bool Storage::loadConfig()
     DeserializationError error = deserializeJson(docConfig, file);
     file.close();
 
-    if (error)
-    {
-        Serial.println(F("[SPIFFS] Fail Deserialize Json"));
+    if (error) {
+        ESP_LOGE(TAG_STORAGE, "Failed to parse config JSON: %s", error.c_str());
         return false;
     }
 
@@ -76,7 +74,7 @@ bool Storage::loadConfig()
     strlcpy(config.startTime, docConfig["start"] | "21:00", sizeof(config.startTime));
     strlcpy(config.endTime, docConfig["end"] | "00:45", sizeof(config.endTime));
 
-    Serial.println(F("[SPIFFS] Success Load Config"));
+    ESP_LOGI(TAG_STORAGE, "Config loaded - Schedule: %s - %s", config.startTime, config.endTime);
     return true;
 }
 
@@ -109,55 +107,45 @@ bool Storage::saveWifi(const char *wifiAP, const char *password)
     return true;
 }
 
-bool Storage::saveSchedule(const char *start, const char *end)
-{
-    Serial.println("[SPIFFS] saveSchedule called");
-    Serial.print("[SPIFFS] start: ");
-    Serial.println(start ? start : "NULL");
-    Serial.print("[SPIFFS] end: ");
-    Serial.println(end ? end : "NULL");
-    
-    // validate format HH:MM
-    auto valid = [](const char *t) -> bool
-    {
+bool Storage::saveSchedule(const char *start, const char *end) {
+    // Validate format HH:MM
+    auto valid = [](const char *t) -> bool {
         if (!t) {
-            Serial.println("[SPIFFS] Time is NULL");
+            ESP_LOGE(TAG_STORAGE, "Time is NULL");
             return false;
         }
         if (strlen(t) != 5) {
-            Serial.printf("[SPIFFS] Invalid length: %d (expected 5)\n", strlen(t));
+            ESP_LOGE(TAG_STORAGE, "Invalid time length: %d (expected 5)", strlen(t));
             return false;
         }
         if (t[2] != ':') {
-            Serial.println("[SPIFFS] Missing colon at position 2");
+            ESP_LOGE(TAG_STORAGE, "Missing colon at position 2");
             return false;
         }
         int h = (t[0] - '0') * 10 + (t[1] - '0');
         int m = (t[3] - '0') * 10 + (t[4] - '0');
         if (h < 0 || h > 23 || m < 0 || m > 59) {
-            Serial.printf("[SPIFFS] Invalid time values - h:%d, m:%d\n", h, m);
+            ESP_LOGE(TAG_STORAGE, "Invalid time values - h:%d, m:%d", h, m);
             return false;
         }
         return true;
     };
     
     if (!valid(start)) {
-        Serial.println("[SPIFFS] Start time validation failed");
+        ESP_LOGE(TAG_STORAGE, "Start time validation failed");
         return false;
     }
     if (!valid(end)) {
-        Serial.println("[SPIFFS] End time validation failed");
+        ESP_LOGE(TAG_STORAGE, "End time validation failed");
         return false;
     }
 
-    Serial.println("[SPIFFS] Time validation passed, opening file...");
     File file = SPIFFS.open("/config.json", FILE_WRITE);
     if (!file) {
-        Serial.println("[SPIFFS] Failed to open config.json for writing");
+        ESP_LOGE(TAG_STORAGE, "Failed to open config.json for writing");
         return false;
     }
     
-    Serial.println("[SPIFFS] Creating JSON document...");
     JsonDocument docConfig;
     docConfig["wifiAp"] = config.wifiAp;
     docConfig["wifiPassword"] = config.wifiPassword;
@@ -165,9 +153,8 @@ bool Storage::saveSchedule(const char *start, const char *end)
     docConfig["start"] = start;
     docConfig["end"] = end;
     
-    if (serializeJson(docConfig, file) == 0)
-    {
-        Serial.println("[SPIFFS] JSON serialization failed");
+    if (serializeJson(docConfig, file) == 0) {
+        ESP_LOGE(TAG_STORAGE, "JSON serialization failed");
         file.close();
         return false;
     }
@@ -176,6 +163,6 @@ bool Storage::saveSchedule(const char *start, const char *end)
     strlcpy(config.startTime, start, sizeof(config.startTime));
     strlcpy(config.endTime, end, sizeof(config.endTime));
     
-    Serial.println("[SPIFFS] Schedule saved successfully");
+    ESP_LOGI(TAG_STORAGE, "Schedule saved: %s - %s", start, end);
     return true;
 }
