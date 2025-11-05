@@ -28,7 +28,7 @@ I2SClass i2s;
 
 #include "esp_check.h"
 #include "es8311.h"
-#include "canon.h"
+#include "canon.h" 
 
 #define EXAMPLE_SAMPLE_RATE 16000
 #define EXAMPLE_VOICE_VOLUME 80                  // 0 - 100
@@ -130,8 +130,6 @@ StepCounter *stepCounter;
 void applyWiFiMode(void *param);
 void applySensor(void *param);
 void controlAlarmTask(void *param);
-// --- MODIFIKASI: Deklarasi fungsi untuk task alarm baru ---
-void controlAlarmTask(void *param); 
 
 
 extern bool switchWiFiAP();
@@ -155,7 +153,7 @@ extern void timeAlarm(int32_t *data, size_t len );
 extern void setScheduleTime(const char *startTime, const char *endTime);
 extern void fileAudio(const char **data, size_t len);
 extern bool playAlarm();
-extern bool playAudio();
+extern int playAudio();
 extern const char *getFileAudioSelected();
 extern bool getSetAlarm();
 extern void setPlayAlarm(bool data);
@@ -182,12 +180,17 @@ bool isAlarm = false;
 bool setAlarm = false;
 bool saveAlarm = false;
 bool hiddenAlarm = false;
+bool isPlay = false;
+int playTestAudio = 0;
+String fileSelected;
+int total = 0;
 unsigned long lastStatusPrint = 0;
 
 // --- MODIFIKASI: Pindahkan variabel alarm ke scope global agar bisa diakses oleh task alarm ---
 unsigned long alarmUntil = 0; // millis timestamp until which alarm stays active
 String HH_MM = "21:00";
 String CURRENT_DATE = "TUE 18/10/2025";
+String jsonData = "[]";  // Static storage untuk JSON data dari SD card
 
 bool initializeHardware(){
   bool isSDCard = memory->begin(SDMMC_CLK, SDMMC_CMD, SDMMC_DATA);
@@ -520,6 +523,7 @@ void applySensor(void *param){
     isWifiAP = switchWiFiAP();
     isWifi = switchWiFi();
     isAlarm = playAlarm();
+    playTestAudio = playAudio();
     saveAlarm  = getSaveAlarm();
     hiddenAlarm = gethidenAlaram();
     setAlarm = getSetAlarm();
@@ -527,6 +531,64 @@ void applySensor(void *param){
     int32_t bb = getBB();
     const char *startTime = getStartTime();
     const char *endTime = getEndTime();
+    fileSelected = getFileAudioSelected();
+    
+    // Update JSON data di task yang sama dengan yang menggunakannya (menghindari race condition)
+    static unsigned long lastJsonUpdate = 0;
+    static String fileNames[10];  // Max 10 files
+    static const char* fileNamePtrs[10];
+    static int fileCount = 0;
+    
+    if (millis() - lastJsonUpdate > 1000) {  // Update setiap 1 detik
+      jsonData = memory->listDirJson("/");
+      total = memory->totalFile();
+      
+      // Parse JSON string menjadi array of filenames
+      // JSON format: ["file1.wav","file2.wav",...]
+      fileCount = 0;
+      int jsonLen = jsonData.length();
+      String currentFile = "";
+      bool inQuotes = false;
+      
+      for (int i = 0; i < jsonLen && fileCount < 10; i++) {
+        char c = jsonData[i];
+        
+        if (c == '"') {
+          if (inQuotes) {
+            // End of filename
+            if (currentFile.length() > 0) {
+              fileNames[fileCount] = currentFile;
+              fileNamePtrs[fileCount] = fileNames[fileCount].c_str();
+              fileCount++;
+              currentFile = "";
+            }
+          }
+          inQuotes = !inQuotes;
+        } else if (inQuotes) {
+          currentFile += c;
+        }
+      }
+      
+      // Update UI dengan array of filenames
+      if (fileCount > 0) {
+        fileAudio(fileNamePtrs, fileCount);
+      } else {
+        // Set empty array jika tidak ada file
+        fileAudio(nullptr, 0);
+      }
+      
+      lastJsonUpdate = millis();
+    }
+    
+    if (playTestAudio == 1)
+    {
+      isPlay = true;
+      // USBSerial.println("isPlay true from playTestAudio");
+    }else{
+      isPlay = false;
+      // USBSerial.println("isPlay false from playTestAudio");
+    }
+    
 
     // mButton->tick();
     stepDetected = isStep(); // Baca status step di dalam perlindungan mutex
@@ -833,13 +895,7 @@ void controlAlarmTask(void *param) {
             lastStackCheck = millis();
         }
         
-        // Inisialisasi audio hanya saat pertama kali dibutuhkan
-        // if (isAlarmActive && !audioInitialized) {
-        //     pinMode(PA, OUTPUT);
-        //     digitalWrite(PA, HIGH);
 
-
-        // }
       
         if (isAlarmActive) {
             isAlarmActive = false; 
@@ -849,6 +905,96 @@ void controlAlarmTask(void *param) {
         }
 
         bool shouldBePlaying = (long)(millis() - alarmUntil) < 0;
+
+        // JSON data sekarang diupdate dari applySensor task untuk menghindari race condition
+        // Kode ini tidak lagi diperlukan di sini
+        
+        if(isPlay && !isPlaying && audioInitialized){
+          USBSerial.println("[Audio] Test playback triggered by user");
+          if (webServer->setFileSelected(fileSelected)) {
+            USBSerial.printf("[Audio] Playing test file: %s\n", fileSelected.c_str());
+            isPlaying = true;
+            
+            // Pastikan PA masih HIGH
+            digitalWrite(PA, HIGH);
+            
+            // Determine which audio file to play
+            const char* wavFile = nullptr;
+            static String wavFilePath;  // Static to keep string in memory
+            wavFilePath = "/" + String(webServer->getFileSelected());
+            wavFile = wavFilePath.c_str();
+            int32_t wavDataSize = memory->getWavDataSize(wavFile);
+            const size_t CHUNK_SIZE = 2048;
+            uint8_t* audioBuffer = (uint8_t*)malloc(CHUNK_SIZE);
+            int16_t* stereoBuffer = (int16_t*)malloc(CHUNK_SIZE * 2);  // Pre-allocate stereo buffer
+            if (!audioBuffer || !stereoBuffer) {
+                USBSerial.println("[Audio] Failed to allocate memory, falling back to default");
+                if (audioBuffer) free(audioBuffer);
+                if (stereoBuffer) free(stereoBuffer);
+            } else {
+                size_t offset = 0;
+                size_t totalWritten = 0;
+                bool playbackSuccess = true;
+                while (audioInitialized && offset < (size_t)wavDataSize) {
+                        size_t remainingBytes = wavDataSize - offset;
+                        size_t bytesToRead = (remainingBytes > CHUNK_SIZE) ? CHUNK_SIZE : remainingBytes;
+                        
+                        // Read chunk from SD card
+                        int32_t bytesRead = memory->readWavChunk(wavFile, audioBuffer, offset, bytesToRead);
+                        
+                        if (bytesRead > 0) {
+                            // Convert mono to stereo
+                            int numSamples = bytesRead / 2;
+                            int16_t* monoBuffer = (int16_t*)audioBuffer;
+                            
+                            // Optimized: use memcpy-like approach for better performance
+                            for (int i = 0; i < numSamples; i++) {
+                                int16_t sample = monoBuffer[i];
+                                stereoBuffer[i * 2] = sample;       // Left channel
+                                stereoBuffer[i * 2 + 1] = sample;   // Right channel
+                            }
+                            
+                            // Write stereo data to I2S
+                            size_t bytesWritten = i2s.write((uint8_t*)stereoBuffer, numSamples * 2 * sizeof(int16_t));
+                            
+                            if (bytesWritten > 0) {
+                                offset += bytesRead;
+                                totalWritten += bytesWritten;
+                                
+                                // Log progress every 50KB
+                                if (totalWritten % 51200 == 0) {
+                                    USBSerial.printf("[Audio] Progress: %d/%d bytes (%.1f%%)\n", 
+                                                    totalWritten, wavDataSize * 2, 
+                                                    (float)totalWritten * 100.0 / (wavDataSize * 2));
+                                }
+                            } else {
+                                USBSerial.println("[Audio] Warning: No bytes written to I2S, retrying...");
+                                vTaskDelay(pdMS_TO_TICKS(10));
+                            }
+                        } else {
+                            USBSerial.printf("[Audio] Error reading chunk at offset %d\n", offset);
+                            playbackSuccess = false;
+                            break;
+                        }
+
+                        // Check if user turned off playback
+                        if (!isPlay) {
+                            USBSerial.println("[Audio] Playback stopped by user");
+                            break;
+                        }
+                        
+                        // Minimal delay for task yielding
+                        vTaskDelay(pdMS_TO_TICKS(1));
+                }
+                  
+                // Free allocated buffers
+                free(audioBuffer);
+                free(stereoBuffer);
+            }
+            isPlaying = false;
+
+          }
+        }
 
         if (shouldBePlaying && !isPlaying && audioInitialized) {
             // --- ALARM MULAI AKTIF ---
@@ -861,49 +1007,153 @@ void controlAlarmTask(void *param) {
             USBSerial.printf("[Control] Window:ON Alarm:TRIGGER Start:%s End:%s\n",
                 STORAGE.getStartTime(), STORAGE.getEndTime());
             
-            USBSerial.printf("[Audio] Playing canon.pcm - Size: %d bytes\n", canon_pcm_len);
+            // Determine which audio file to play
+            const char* wavFile = nullptr;
+            bool useSDCard = false;
             
-            // Kirim audio data dalam chunks untuk menghindari buffer overflow
-            const size_t CHUNK_SIZE = 2048; // 2KB per chunk (reduce dari 4KB)
-            size_t offset = 0;
-            size_t totalWritten = 0;
-            
-            while (isAlarm && audioInitialized && offset < canon_pcm_len) {
-                size_t remainingBytes = canon_pcm_len - offset;
-                size_t bytesToWrite = (remainingBytes > CHUNK_SIZE) ? CHUNK_SIZE : remainingBytes;
-                
-                // Write chunk ke I2S
-                size_t bytesWritten = i2s.write((uint8_t *)canon_pcm + offset, bytesToWrite);
-                
-                if (bytesWritten > 0) {
-                    offset += bytesWritten;
-                    totalWritten += bytesWritten;
-                    
-                    // Log progress setiap 50KB
-                    if (totalWritten % 51200 == 0) {
-                        USBSerial.printf("[Audio] Progress: %d/%d bytes (%.1f%%)\n", 
-                                        totalWritten, canon_pcm_len, 
-                                        (float)totalWritten * 100.0 / canon_pcm_len);
-                    }
-                } else {
-                    USBSerial.println("[Audio] Warning: No bytes written, retrying...");
-                    vTaskDelay(pdMS_TO_TICKS(10));
-                }
-                
-                // Check jika user mematikan alarm
-                if (!isAlarm) {
-                    USBSerial.println("[Audio] Alarm stopped by user");
-                    break;
-                }
-                
-                // Yield ke task lain
-                vTaskDelay(pdMS_TO_TICKS(1));
+            if (webServer->getFileSelected() != "") {
+                // User has selected a WAV file from SD card
+                static String wavFilePath;  // Static to keep string in memory
+                wavFilePath = "/" + String(webServer->getFileSelected());
+                wavFile = wavFilePath.c_str();
+                useSDCard = true;
+                USBSerial.printf("[Audio] Playing user-selected file: %s\n", wavFile);
             }
             
-            USBSerial.printf("[Audio] Playback complete - Total written: %d bytes\n", totalWritten);
-            USBSerial.println("[Control] Alarm:IDLE");
+            if (useSDCard && wavFile) {
+                // Play WAV file from SD card
+                int32_t wavDataSize = memory->getWavDataSize(wavFile);
+                
+                if (wavDataSize <= 0) {
+                    USBSerial.printf("[Audio] Failed to get WAV file size: %s, falling back to default\n", wavFile);
+                    useSDCard = false;  // Fallback to default audio
+                } else {
+                    USBSerial.printf("[Audio] Playing %s - Size: %d bytes\n", wavFile, wavDataSize);
+                    
+                    // Allocate buffers once outside the loop
+                    const size_t CHUNK_SIZE = 2048;
+                    uint8_t* audioBuffer = (uint8_t*)malloc(CHUNK_SIZE);
+                    int16_t* stereoBuffer = (int16_t*)malloc(CHUNK_SIZE * 2);  // Pre-allocate stereo buffer
+                    
+                    if (!audioBuffer || !stereoBuffer) {
+                        USBSerial.println("[Audio] Failed to allocate memory, falling back to default");
+                        if (audioBuffer) free(audioBuffer);
+                        if (stereoBuffer) free(stereoBuffer);
+                        useSDCard = false;
+                    } else {
+                        size_t offset = 0;
+                        size_t totalWritten = 0;
+                        bool playbackSuccess = true;
+                        
+                        while (isAlarm && audioInitialized && offset < (size_t)wavDataSize) {
+                            size_t remainingBytes = wavDataSize - offset;
+                            size_t bytesToRead = (remainingBytes > CHUNK_SIZE) ? CHUNK_SIZE : remainingBytes;
+                            
+                            // Read chunk from SD card
+                            int32_t bytesRead = memory->readWavChunk(wavFile, audioBuffer, offset, bytesToRead);
+                            
+                            if (bytesRead > 0) {
+                                // Convert mono to stereo
+                                int numSamples = bytesRead / 2;
+                                int16_t* monoBuffer = (int16_t*)audioBuffer;
+                                
+                                // Optimized: use memcpy-like approach for better performance
+                                for (int i = 0; i < numSamples; i++) {
+                                    int16_t sample = monoBuffer[i];
+                                    stereoBuffer[i * 2] = sample;       // Left channel
+                                    stereoBuffer[i * 2 + 1] = sample;   // Right channel
+                                }
+                                
+                                // Write stereo data to I2S
+                                size_t bytesWritten = i2s.write((uint8_t*)stereoBuffer, numSamples * 2 * sizeof(int16_t));
+                                
+                                if (bytesWritten > 0) {
+                                    offset += bytesRead;
+                                    totalWritten += bytesWritten;
+                                    
+                                    // Log progress every 50KB
+                                    if (totalWritten % 51200 == 0) {
+                                        USBSerial.printf("[Audio] Progress: %d/%d bytes (%.1f%%)\n", 
+                                                        totalWritten, wavDataSize * 2, 
+                                                        (float)totalWritten * 100.0 / (wavDataSize * 2));
+                                    }
+                                } else {
+                                    USBSerial.println("[Audio] Warning: No bytes written to I2S, retrying...");
+                                    vTaskDelay(pdMS_TO_TICKS(10));
+                                }
+                            } else {
+                                USBSerial.printf("[Audio] Error reading chunk at offset %d\n", offset);
+                                playbackSuccess = false;
+                                break;
+                            }
+                            
+                            // Check if user turned off alarm
+                            if (!isAlarm) {
+                                USBSerial.println("[Audio] Alarm stopped by user");
+                                break;
+                            }
+                            
+                            // Minimal delay for task yielding
+                            vTaskDelay(pdMS_TO_TICKS(1));
+                        }
+                        
+                        // Free allocated buffers
+                        free(audioBuffer);
+                        free(stereoBuffer);
+                        
+                        if (playbackSuccess) {
+                            USBSerial.printf("[Audio] Playback complete - Total written: %d bytes\n", totalWritten);
+                            USBSerial.println("[Control] Alarm:IDLE");
+                        }
+                    }
+                }
+            }
             
-            // Reset state setelah selesai
+            // Fallback to default audio (canon.pcm) if no SD card file or error occurred
+            if (!useSDCard) {
+                USBSerial.printf("[Audio] Playing default audio - Size: %d bytes\n", canon_pcm_len);
+                
+                const size_t CHUNK_SIZE = 2048;
+                size_t offset = 0;
+                size_t totalWritten = 0;
+                
+                while (isAlarm && audioInitialized && offset < canon_pcm_len) {
+                    size_t remainingBytes = canon_pcm_len - offset;
+                    size_t bytesToWrite = (remainingBytes > CHUNK_SIZE) ? CHUNK_SIZE : remainingBytes;
+                    
+                    // Write chunk to I2S
+                    size_t bytesWritten = i2s.write((uint8_t *)canon_pcm + offset, bytesToWrite);
+                    
+                    if (bytesWritten > 0) {
+                        offset += bytesWritten;
+                        totalWritten += bytesWritten;
+                        
+                        // Log progress every 50KB
+                        if (totalWritten % 51200 == 0) {
+                            USBSerial.printf("[Audio] Progress: %d/%d bytes (%.1f%%)\n", 
+                                            totalWritten, canon_pcm_len, 
+                                            (float)totalWritten * 100.0 / canon_pcm_len);
+                        }
+                    } else {
+                        USBSerial.println("[Audio] Warning: No bytes written, retrying...");
+                        vTaskDelay(pdMS_TO_TICKS(10));
+                    }
+                    
+                    // Check if user turned off alarm
+                    if (!isAlarm) {
+                        USBSerial.println("[Audio] Alarm stopped by user");
+                        break;
+                    }
+                    
+                    // Minimal delay for task yielding
+                    vTaskDelay(pdMS_TO_TICKS(1));
+                }
+                
+                USBSerial.printf("[Audio] Playback complete - Total written: %d bytes\n", totalWritten);
+                USBSerial.println("[Control] Alarm:IDLE");
+            }
+            
+            // Reset state after playback
             isPlaying = false;
             alarmUntil = 0; 
         }

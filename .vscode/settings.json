@@ -21,6 +21,10 @@
         "sstream": "cpp",
         "stop_token": "cpp",
         "chrono": "cpp",
-        "variant": "cpp"
+        "variant": "cpp",
+        "*.tcc": "cpp",
+        "random": "cpp",
+        "mutex": "cpp",
+        "span": "cpp"
     }
 }

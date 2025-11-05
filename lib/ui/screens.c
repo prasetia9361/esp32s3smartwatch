@@ -1142,8 +1142,8 @@ void create_screen_audioo() {
         {
             lv_obj_t *obj = lv_dropdown_create(parent_obj);
             objects.obj22 = obj;
-            lv_obj_set_pos(obj, 57, 104);
-            lv_obj_set_size(obj, 261, LV_SIZE_CONTENT);
+            lv_obj_set_pos(obj, 35, 104);
+            lv_obj_set_size(obj, 298, LV_SIZE_CONTENT);
             lv_dropdown_set_options(obj, "");
             lv_obj_add_event_cb(obj, event_handler_cb_audioo_obj22, LV_EVENT_ALL, flowState);
             lv_obj_set_style_text_font(obj, &lv_font_montserrat_26, LV_PART_MAIN | LV_STATE_DEFAULT);

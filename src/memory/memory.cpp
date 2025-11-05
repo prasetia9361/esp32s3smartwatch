@@ -236,6 +236,37 @@ File Memory::openFile(const char* path) {
     return file;
 }
 
+int32_t Memory::totalFile() {
+    if (!_isInitialized) {
+        // Serial.println("[Memory] totalFile: Not initialized!");
+        return -1;
+    }
+
+    File root = SD_MMC.open("/");
+    if (!root) {
+        // Serial.println("[Memory] totalFile: Failed to open root directory!");
+        return -1;
+    }
+    if (!root.isDirectory()) {
+        // Serial.println("[Memory] totalFile: Root is not a directory!");
+        root.close();
+        return -1;
+    }
+
+    int32_t fileCount = 0;
+    File file = root.openNextFile();
+    while (file) {
+        if (!file.isDirectory()) {
+            fileCount++;
+        }
+        file = root.openNextFile();
+    }
+    root.close();
+
+    // Serial.printf("[Memory] totalFile: Total files in root: %d\n", fileCount);
+    return fileCount;
+}
+
 // Stream a file's content to a destination Stream in chunks.
 bool Memory::streamFile(const char* path, Stream& dest, size_t chunkSize) {
     File file = openFile(path);
@@ -348,4 +379,68 @@ int Memory::read(const char* path, int16_t *samples, int maxSamples) {
 
     // Kembalikan jumlah sampel yang berhasil dibaca
     return samplesRead;
+}
+
+// Get WAV file data size (excluding 44-byte header)
+int32_t Memory::getWavDataSize(const char* path) {
+    if (!_isInitialized) {
+        Serial.println("[Memory] getWavDataSize: Not initialized!");
+        return -1;
+    }
+
+    File file = openFile(path);
+    if (!file || file.isDirectory()) {
+        Serial.printf("[Memory] getWavDataSize: Failed to open %s\n", path);
+        return -1;
+    }
+
+    size_t fileSize = file.size();
+    file.close();
+
+    if (fileSize < 44) {
+        Serial.printf("[Memory] getWavDataSize: File too small (%d bytes)\n", fileSize);
+        return -1;
+    }
+
+    // WAV data size = total file size - 44 byte header
+    int32_t dataSize = fileSize - 44;
+    Serial.printf("[Memory] getWavDataSize: %s has %d bytes of audio data\n", path, dataSize);
+    return dataSize;
+}
+
+// Read WAV audio data in chunks (skips 44-byte header)
+int32_t Memory::readWavChunk(const char* path, uint8_t* buffer, size_t offset, size_t length) {
+    if (!_isInitialized) {
+        Serial.println("[Memory] readWavChunk: Not initialized!");
+        return -1;
+    }
+
+    if (!buffer) {
+        Serial.println("[Memory] readWavChunk: Buffer is NULL!");
+        return -1;
+    }
+
+    File file = openFile(path);
+    if (!file || file.isDirectory()) {
+        Serial.printf("[Memory] readWavChunk: Failed to open %s\n", path);
+        return -1;
+    }
+
+    // Skip WAV header (44 bytes) + offset
+    if (!file.seek(44 + offset)) {
+        Serial.printf("[Memory] readWavChunk: Failed to seek to position %d\n", 44 + offset);
+        file.close();
+        return -1;
+    }
+
+    // Read chunk
+    int32_t bytesRead = file.read(buffer, length);
+    file.close();
+
+    if (bytesRead < 0) {
+        Serial.printf("[Memory] readWavChunk: Read error\n");
+        return -1;
+    }
+
+    return bytesRead;
 }

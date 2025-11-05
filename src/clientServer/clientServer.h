@@ -26,7 +26,11 @@ class clientServer {
    public:
     clientServer(Memory *memory) : _memory(memory), server(80) {}
     void begin();
-    String getFileOpening() { return fileNameOpening; };
+    String getFileSelected() { return fileNameOpening; };
+    bool setFileSelected(String filename) { 
+        fileNameOpening = filename; 
+        return true;
+    };
     // void getDataRequest();
 };
 

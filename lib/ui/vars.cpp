@@ -164,7 +164,30 @@ void setScheduleTime(const char *startTime, const char *endTime) {
 }
 
 void fileAudio(const char **data, size_t len){
-  if(data == nullptr) return;
+  // Validasi input - cegah crash jika data tidak valid
+  if(data == nullptr || len == 0) {
+    // Set array kosong jika tidak ada data
+    eez::ArrayOfString emptyArray(0);
+    flow::setGlobalVariable(FLOW_GLOBAL_VARIABLE_FILE_AUDIO, emptyArray.value);
+    return;
+  }
+  
+  // Validasi setiap elemen array
+  bool allValid = true;
+  for (size_t i = 0; i < len; i++) {
+    if (data[i] == nullptr) {
+      allValid = false;
+      break;
+    }
+  }
+  
+  if (!allValid) {
+    // Set array kosong jika ada elemen yang invalid
+    eez::ArrayOfString emptyArray(0);
+    flow::setGlobalVariable(FLOW_GLOBAL_VARIABLE_FILE_AUDIO, emptyArray.value);
+    return;
+  }
+  
   eez::ArrayOfString flowArray(len);
   for (size_t i = 0; i < len; i++)
   {
@@ -181,8 +204,8 @@ void setPlayAlarm(bool data){
   flow::setGlobalVariable(FLOW_GLOBAL_VARIABLE_PLAY_ALARM, data);
 }
 
-bool playAudio(){
-  return flow::getGlobalVariable(FLOW_GLOBAL_VARIABLE_PLAY_AUDIO).getBoolean();
+int playAudio(){
+  return flow::getGlobalVariable(FLOW_GLOBAL_VARIABLE_PLAY_AUDIO).getInt();
 }
 
 const char *getFileAudioSelected(){
