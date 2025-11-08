@@ -11,7 +11,7 @@ class Memory;
 
 // Audio configuration constants
 #define AUDIO_SAMPLE_RATE 16000
-#define AUDIO_VOICE_VOLUME 80
+#define AUDIO_VOICE_VOLUME 90
 #define AUDIO_MIC_GAIN 3
 #define AUDIO_CHUNK_SIZE 2048
 #define AUDIO_TEST_TONE_FREQ 440  // Hz (A4 note)
@@ -39,7 +39,6 @@ private:
     
     // Private helper methods
     esp_err_t initCodec();
-    bool generateTestTone();
     bool convertMonoToStereo(const int16_t* monoBuffer, int16_t* stereoBuffer, int numSamples);
 
 public:
@@ -114,6 +113,8 @@ public:
      * @param enable true to enable, false to disable
      */
     void setPowerAmplifier(bool enable);
+
+    bool generateTestTone();
 };
 
 #endif // AUDIO_H

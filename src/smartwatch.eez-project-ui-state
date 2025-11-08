@@ -1,11 +1,11 @@
 {
   "navigation": {
-    "selectedUserPageObject": "[smartwatch.eez-project]:/userPages/5",
-    "selectedGlobalVariableObject": "[smartwatch.eez-project]:/variables/globalVariables/28",
+    "selectedUserPageObject": "[smartwatch.eez-project]:/userPages/2",
+    "selectedGlobalVariableObject": "[smartwatch.eez-project]:/variables/globalVariables/33",
     "selectedFontObject": "[smartwatch.eez-project]:/fonts/3",
     "selectedBitmapObject": "[smartwatch.eez-project]:/bitmaps/1",
     "subnavigationSelectedItems": {
-      "variables-tab/sub-navigation/selected-item": "Actions"
+      "variables-tab/sub-navigation/selected-item": "Global"
     }
   },
   "layoutModel": {
@@ -67,7 +67,7 @@
           {
             "type": "border",
             "selected": 0,
-            "size": 307.15625,
+            "size": 95.5,
             "location": "bottom",
             "children": [
               {
@@ -151,7 +151,7 @@
                 {
                   "type": "tabset",
                   "id": "#1d9ecba4-690f-4f60-859f-ff602ad4ad9e",
-                  "weight": 0.7659082986268558,
+                  "weight": 1.2631143040425203,
                   "enableClose": false,
                   "children": [
                     {
@@ -167,7 +167,7 @@
                 {
                   "type": "tabset",
                   "id": "#a44ebcbd-12a1-4a56-bb3a-9b15fd74aedf",
-                  "weight": 1.2242928106838378,
+                  "weight": 0.7270868052681734,
                   "enableClose": false,
                   "children": [
                     {
@@ -192,10 +192,10 @@
                 {
                   "type": "tab",
                   "id": "#da5d835d-1b67-46c7-b529-22f7036de115",
-                  "name": "hasilhidrasi",
+                  "name": "setting",
                   "component": "editor",
                   "config": {
-                    "objectPath": "[smartwatch.eez-project]:/userPages/5",
+                    "objectPath": "[smartwatch.eez-project]:/userPages/2",
                     "permanent": false
                   },
                   "icon": "svg:page"
@@ -1039,14 +1039,12 @@
       "selection": {
         "0": {
           "0": {},
-          "2": {
-            "0": {},
-            "1": {}
-          },
           "3": {
             "2": {}
           },
-          "4": {}
+          "4": {},
+          "10": {},
+          "11": {}
         },
         "3": {},
         "6": {},
@@ -1055,10 +1053,10 @@
       },
       "transform": {
         "translate": {
-          "x": -150,
-          "y": -132
+          "x": -297.8854448536537,
+          "y": -224.09803837953092
         },
-        "scale": 1
+        "scale": 0.9
       },
       "timeline": {
         "isEditorActive": false,
@@ -1071,17 +1069,15 @@
       "selection": {
         "0": {
           "0": {},
-          "2": {
-            "$selected": true
-          },
+          "2": {},
           "3": {}
         },
         "1": {}
       },
       "transform": {
         "translate": {
-          "x": -241,
-          "y": -213
+          "x": -298,
+          "y": -191
         },
         "scale": 1
       },
@@ -1350,7 +1346,7 @@
   "logsPanelFilter": "all",
   "selectedStylePropertyName": "",
   "lvglPart": "MAIN",
-  "lvglState": "PRESSED",
+  "lvglState": "CHECKED",
   "lvglExpandedPropertiesGroup": [
     "TEXT",
     "MISCELLANEOUS",
@@ -1362,7 +1358,9 @@
     "OUTLINE",
     "ARC",
     "LINE",
-    "IMAGE"
+    "IMAGE",
+    "BORDER",
+    "BACKGROUND"
   ],
   "showInactiveFlowsInDebugger": true
 }

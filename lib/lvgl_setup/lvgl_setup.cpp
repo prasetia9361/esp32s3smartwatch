@@ -1,7 +1,18 @@
 #include "lvgl_setup.h"
+#include "lvgl_setup.h"
 
+#include "freertos/FreeRTOS.h"
+#include "freertos/semphr.h"
 // Periode tick LVGL dalam milidetik. LVGL menggunakan ini untuk menangani animasi dan tugas lainnya.
 #define EXAMPLE_LVGL_TICK_PERIOD_MS 2
+
+// Variabel untuk brightness management
+static uint8_t currentBrightness = 200;    // Kecerahan saat ini
+static uint8_t defaultBrightness = 200;    // Kecerahan default (akan dikembalikan saat wake up)
+// Default timeout set to 120000 ms = 2 minutes (was incorrectly 12000)
+static uint32_t sleepTimeout = 120000;     // Timeout sleep dalam ms (default: 2 menit)
+static uint32_t lastInteractionTime = 0;   // Waktu terakhir ada interaksi
+static bool displaySleeping = false;       // Status apakah layar sedang sleep
 
 // Buffer untuk LVGL. LVGL akan merender ke buffer ini sebelum dikirim ke layar.
 static lv_disp_draw_buf_t draw_buf;
@@ -25,6 +36,9 @@ std::shared_ptr<Arduino_IIC_DriveBus> IIC_Bus =
 
 // Deklarasi forward untuk fungsi interrupt sentuh.
 void Arduino_IIC_Touch_Interrupt(void);
+
+// I2C mutex declared in main.cpp; use to protect all Wire/I2C access from tasks
+extern SemaphoreHandle_t i2c_mutex;
 
 // Inisialisasi driver untuk kontroler sentuh FT3168.
 // Menggunakan bus I2C dan mendefinisikan pin interrupt serta fungsi handler-nya.
@@ -72,29 +86,57 @@ void example_increase_lvgl_tick(void *arg) {
 // Callback untuk membaca status input sentuh.
 // Fungsi ini dipanggil oleh LVGL untuk mendapatkan data dari perangkat input.
 void my_touchpad_read(lv_indev_drv_t *indev_driver, lv_indev_data_t *data) {
-  // Membaca jumlah titik sentuh yang terdeteksi.
-  uint8_t touch_points = FT3168->IIC_Read_Device_Value(FT3168->Arduino_IIC_Touch::Value_Information::TOUCH_FINGER_NUMBER);
+  // To avoid spamming the I2C bus, only query the touch controller when
+  // the interrupt flag was set by the ISR. This keeps I2C traffic low.
+  if (!FT3168->IIC_Interrupt_Flag) {
+    data->state = LV_INDEV_STATE_REL;
+    return;
+  }
 
-  // Jika ada setidaknya satu titik sentuh
+  // Clear the interrupt flag here (we will service it now)
+  FT3168->IIC_Interrupt_Flag = false;
+
+  // Touch reading has HIGH PRIORITY - wait longer for mutex to ensure responsiveness
+  // We DON'T use mutex here because FT3168 library will handle it internally
+  uint8_t touch_points = FT3168->IIC_Read_Device_Value(FT3168->Arduino_IIC_Touch::Value_Information::TOUCH_FINGER_NUMBER);
   if (touch_points > 0) {
-    // Membaca koordinat X dan Y dari kontroler sentuh.
     int32_t touchX = FT3168->IIC_Read_Device_Value(FT3168->Arduino_IIC_Touch::Value_Information::TOUCH_COORDINATE_X);
     int32_t touchY = FT3168->IIC_Read_Device_Value(FT3168->Arduino_IIC_Touch::Value_Information::TOUCH_COORDINATE_Y);
 
-    data->state = LV_INDEV_STATE_PR; // Set status menjadi PRESSED
+    data->state = LV_INDEV_STATE_PR; // PRESSED
     data->point.x = touchX;
     data->point.y = touchY;
+
+    // Reset sleep timer saat ada sentuhan
+    resetSleepTimer();
   } else {
-    data->state = LV_INDEV_STATE_REL; // Set status menjadi RELEASED
+    data->state = LV_INDEV_STATE_REL; // RELEASED
   }
 }
 
 // Fungsi inisialisasi utama untuk LVGL dan semua driver terkait.
 void lvgl_init() {
   // Inisialisasi kontroler sentuh FT3168.
-  while (FT3168->begin() == false) {
-    USBSerial.println("FT3168 initialization fail");
-    delay(2000);
+  // FT3168 uses I2C; protect initialization with the i2c_mutex if available.
+  bool ft_ok = false;
+  while (!ft_ok) {
+    if (i2c_mutex != NULL) {
+      if (xSemaphoreTake(i2c_mutex, pdMS_TO_TICKS(1000)) == pdTRUE) {
+        ft_ok = FT3168->begin();
+        xSemaphoreGive(i2c_mutex);
+      } else {
+        // Can't get mutex; wait a bit and retry
+        delay(100);
+      }
+    } else {
+      // No mutex declared (fallback) -- try normally but this is not ideal
+      ft_ok = FT3168->begin();
+    }
+
+    if (!ft_ok) {
+      USBSerial.println("FT3168 initialization fail");
+      delay(2000);
+    }
   }
   USBSerial.println("FT3168 initialization successfully");
 
@@ -142,6 +184,10 @@ void lvgl_init() {
   esp_timer_handle_t lvgl_tick_timer = NULL;
   esp_timer_create(&lvgl_tick_timer_args, &lvgl_tick_timer);
   esp_timer_start_periodic(lvgl_tick_timer, EXAMPLE_LVGL_TICK_PERIOD_MS * 1000);
+  
+  // Inisialisasi timer sleep
+  lastInteractionTime = millis();
+  displaySleeping = false;
 }
 
 // Fungsi handler LVGL.
@@ -149,4 +195,56 @@ void lvgl_init() {
 // Fungsi ini menangani tugas-tugas LVGL seperti rendering dan event handling.
 void lvgl_handler() {
   lv_timer_handler();
+}
+
+// ==================== BRIGHTNESS & SLEEP MANAGEMENT ====================
+
+// Fungsi untuk mengatur kecerahan layar
+void setDisplayBrightness(uint8_t brightness) {
+  if (brightness > 255) brightness = 255;
+  currentBrightness = brightness;
+  gfx->Display_Brightness(brightness);
+}
+
+// Fungsi untuk mendapatkan kecerahan saat ini
+uint8_t getDisplayBrightness() {
+  return currentBrightness;
+}
+
+// Fungsi untuk mengatur kecerahan default
+void setDefaultBrightness(uint8_t brightness) {
+  if (brightness > 255) brightness = 255;
+  defaultBrightness = brightness;
+}
+
+// Fungsi untuk reset timer sleep (dipanggil saat ada interaksi user)
+void resetSleepTimer() {
+  lastInteractionTime = millis();
+  
+  // Jika layar sedang sleep, bangunkan
+  if (displaySleeping) {
+    displaySleeping = false;
+    setDisplayBrightness(defaultBrightness);
+    USBSerial.println("Display woke up - brightness restored");
+  }
+}
+
+// Fungsi untuk mengatur timeout sleep
+void setSleepTimeout(uint32_t timeoutMs) {
+  sleepTimeout = timeoutMs;
+}
+
+// Fungsi untuk mendapatkan status sleep
+bool isDisplaySleeping() {
+  return displaySleeping;
+}
+
+// Fungsi untuk menangani auto-sleep (harus dipanggil dari loop utama)
+void handleAutoSleep() {
+  // Cek apakah sudah waktunya untuk sleep
+  if (!displaySleeping && (millis() - lastInteractionTime >= sleepTimeout)) {
+    displaySleeping = true;
+    setDisplayBrightness(0);  // Matikan layar
+    USBSerial.println("Display entering sleep mode - brightness set to 0");
+  }
 }

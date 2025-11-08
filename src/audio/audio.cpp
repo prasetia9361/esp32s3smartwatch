@@ -166,11 +166,11 @@ bool Audio::begin(int bclkPin, int wsPin, int doPin, int diPin, int mclkPin, int
     }
     
     // Play test tone if codec is ready
-    if (_codecInitialized) {
-        vTaskDelay(pdMS_TO_TICKS(200));
-        generateTestTone();
-        vTaskDelay(pdMS_TO_TICKS(200));
-    }
+    // if (_codecInitialized) {
+    //     vTaskDelay(pdMS_TO_TICKS(200));
+    //     generateTestTone();
+    //     vTaskDelay(pdMS_TO_TICKS(200));
+    // }
     
     ESP_LOGI(TAG, "Audio system initialized successfully");
     return true;

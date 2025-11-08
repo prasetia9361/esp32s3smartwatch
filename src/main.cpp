@@ -90,6 +90,9 @@ extern void sethasilHitung(const char* hasil);
 
 int lastDay = -1;
 int currentDay = -1;
+int ntpLastDay = -1;
+int ntpCurrentDay = -1;
+char rtcDateStr[18];
 bool isNtp = false;
 bool isLastNtp = false;
 unsigned long lastTimeUpdate = 0;
@@ -105,6 +108,8 @@ bool setAlarm = false;
 bool saveAlarm = false;
 bool hiddenAlarm = false;
 bool isPlay = false;
+bool isCharging = false;
+bool lastCharging = false;
 int playTestAudio = 0;
 String fileSelected;
 int total = 0;
@@ -156,11 +161,11 @@ void updateTimeDisplay() {
         HH_MM = String(hourMinStr);
         
         // Update date label (format: TUE - 8)
-        currentDay = timeinfo.tm_wday;
+        ntpCurrentDay = timeinfo.tm_wday;
         const char* weekdays[] = {"SUN", "MON", "TUE", "WED", "THU", "FRI", "SAT"};
         char dateStr[18];
         snprintf(dateStr, sizeof(dateStr), "%s %02d/%02d/%04d",
-                weekdays[currentDay],
+                weekdays[ntpCurrentDay],
                 timeinfo.tm_mday, 
                 timeinfo.tm_mon + 1, 
                 timeinfo.tm_year + 1900);
@@ -283,6 +288,11 @@ void setup() {
 }
 
 void loop() {
+  lvgl_handler();
+  ui_tick();
+  
+  // Handle auto-sleep untuk brightness management
+  handleAutoSleep();
   vTaskDelay(5);
 }
 
@@ -330,7 +340,7 @@ void applyWiFiMode(void *param){
       }
     }
     
-    if (isNtp) {
+    if (isNtp && wifiSetup->isConnected()) {
       ntpSetup.update();
       unsigned long currentTime = millis();
       if (currentTime - lastTimeUpdate >= TIME_UPDATE_INTERVAL) {
@@ -411,8 +421,11 @@ void applySensor(void *param){
   bool stepDetected = false;
 
   while (true) {
-    lvgl_handler();
-    ui_tick();
+    // lvgl_handler();
+    // ui_tick();
+    
+    // // Handle auto-sleep untuk brightness management
+    // handleAutoSleep();
 
     isWifiAP = switchWiFiAP();
     isWifi = switchWiFi();
@@ -493,8 +506,10 @@ void applySensor(void *param){
       power.shutdown();
     }
     power.clearIrqStatus();
-    
-    chargeState(battery->isCharging());
+
+    isCharging = battery->isCharging();
+
+    chargeState(isCharging);
     setBT(battery->getBatteryPercentage());
     setStep(stepCounter->getStepCount());
 
@@ -549,13 +564,13 @@ void applySensor(void *param){
         setTimeHHMM((HH_MM).c_str());
       }
 
-      if (currentDay != lastDay) {
+      if (ntpCurrentDay != ntpLastDay) {
         setCurrentDate((CURRENT_DATE).c_str());
         if (!saveAlarm && !hiddenAlarm)
         {
           setPlayAlarm(true);
         }
-        lastDay = currentDay;
+        ntpLastDay = ntpCurrentDay;
       }
     } else {
       if (saveDate() != lastSaveDate) {
@@ -590,11 +605,11 @@ void applySensor(void *param){
 
         currentDay = dt.week;
         const char* weekdays[] = {"SUN", "MON", "TUE", "WED", "THU", "FRI", "SAT"};
-        char dateStr[18];
-        snprintf(dateStr, sizeof(dateStr), "%s %02d/%02d/%04d",
+        
+        snprintf(rtcDateStr, sizeof(rtcDateStr), "%s %02d/%02d/%04d",
                 weekdays[currentDay], dt.day, dt.month, dt.year);
         if (currentDay != lastDay) {
-          setCurrentDate(dateStr);
+          setCurrentDate(rtcDateStr);
           if (!saveAlarm && !hiddenAlarm)
           {
             setPlayAlarm(true);
@@ -622,6 +637,14 @@ void controlAlarmTask(void *param) {
     }
 
     while (true) {
+
+        if (isCharging != lastCharging)
+        {
+          lastCharging = isCharging;
+          audioSystem->generateTestTone();
+        }
+        
+
         if (isAlarmActive) {
             isAlarmActive = false; 
             if (!isPlaying) {

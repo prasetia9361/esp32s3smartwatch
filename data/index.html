@@ -2,11 +2,27 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Mochi WebServer</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hydra-Time Watch Manager</title>
     <style>
-        body {
-            font-family: Arial, sans-serif;
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
         }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            position: relative;
+            overflow-x: hidden;
+        }
+
         #background-video {
             position: fixed;
             top: 0;
@@ -15,155 +31,344 @@
             height: 100%;
             z-index: -1;
             object-fit: cover;
+            opacity: 0.3;
+            filter: blur(2px);
         }
-        h1 {
-            text-align: center;
-            color: #4CAF50;
-            margin-bottom: 40px;
-            font-size: 3em;
-        }
-        h2 {
-            color: #fff;
-        }
+
         .container {
-            max-width: 800px;
-            margin: auto;
-            text-align: center;
-            padding: 20px;
-        }
-        .file-upload, .file-actions {
-            background: rgba(255, 255, 255, 0.1);
-            padding: 20px;
-            border-radius: 8px;
-            box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
-            margin-bottom: 20px;
-            transition: background 0.3s, box-shadow 0.3s;
-        }
-        input[type="file"], select {
+            max-width: 900px;
             width: 100%;
-            padding: 10px;
-            margin: 10px 0;
-            border: 1px solid #ddd;
-            border-radius: 4px;
-            background-color: #444;
-            color: #fff;
-        }
-        input[type="submit"], button {
-            background-color: #4CAF50;
-            color: white;
-            padding: 10px 20px;
-            margin: 10px 0;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-            transition: background-color 0.3s, transform 0.3s;
-        }
-        input[type="submit"]:hover, button:hover {
-            background-color: #45a049;
-            transform: scale(1.05);
-        }
-        .file-actions {
-            display: flex;
-            justify-content: space-between;
-        }
-        .file-actions div {
-            width: 48%;
-        }
-        .toggle-button {
-            position: absolute;
-            top: 20px;
-            right: 20px;
-            background-color: #333;
-            color: white;
-            padding: 10px 20px;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-            transition: background-color 0.3s;
-        }
-        @keyframes bounce {
-            0%, 20%, 50%, 80%, 100% {
-                transform: translateY(0);
-            }
-            40% {
-                transform: translateY(-30px);
-            }
-            60% {
-                transform: translateY(-15px);
-            }
-        }
-        .tech-animation {
-            font-size: 2em;
-            color: #4CAF50;
-            animation: bounce 2s infinite;
-            display: inline-block;
             margin: 0 auto;
+            animation: fadeIn 0.8s ease-in;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Header Styles */
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
             position: relative;
         }
-        .glow-on-hover {
-            width: 220px;
+
+        .header h1 {
+            color: #ffffff;
+            font-size: 3em;
+            font-weight: 700;
+            text-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+            letter-spacing: 1px;
+            margin-bottom: 10px;
+            animation: slideDown 0.8s ease-out;
+        }
+
+        @keyframes slideDown {
+            from { opacity: 0; transform: translateY(-30px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .header p {
+            color: rgba(255, 255, 255, 0.9);
+            font-size: 1.1em;
+            font-weight: 300;
+        }
+
+        .status-badge {
+            display: inline-block;
+            background: rgba(76, 175, 80, 0.9);
+            color: white;
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-size: 0.85em;
+            margin-top: 10px;
+            box-shadow: 0 2px 10px rgba(76, 175, 80, 0.3);
+        }
+
+        /* Card Styles */
+        .card {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            padding: 30px;
+            margin-bottom: 25px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+            backdrop-filter: blur(10px);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            animation: slideUp 0.6s ease-out;
+        }
+
+        @keyframes slideUp {
+            from { opacity: 0; transform: translateY(40px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 50px rgba(0, 0, 0, 0.3);
+        }
+
+        .card-header {
+            display: flex;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid rgba(102, 126, 234, 0.2);
+        }
+
+        .card-icon {
+            width: 50px;
             height: 50px;
-            border: none;
-            outline: none;
-            color: #fff;
-            background: #111;
-            cursor: pointer;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 15px;
+            font-size: 24px;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+        }
+
+        .card-title {
+            font-size: 1.5em;
+            font-weight: 600;
+            color: #2d3748;
+            flex: 1;
+        }
+
+        /* Form Styles */
+        .file-input-wrapper {
             position: relative;
-            z-index: 0;
-            border-radius: 10px;
-            transition: background-color 0.3s;
+            margin: 20px 0;
         }
-        .glow-on-hover:before {
-            content: '';
-            background: linear-gradient(45deg, #ff0000, #ff7300, #fffb00, #48ff00, #00ffd5, #002bff, #7a00ff, #ff00f2, #ff0000);
-            position: absolute;
-            top: -2px;
-            left: -2px;
-            background-size: 400%;
-            z-index: -1;
-            filter: blur(5px);
-            width: calc(100% + 4px);
-            height: calc(100% + 4px);
-            animation: glowing 20s linear infinite;
-            border-radius: 10px;
+
+        input[type="file"] {
+            display: none;
         }
-        .glow-on-hover:active {
-            color: #000;
+
+        .file-input-label {
+            display: block;
+            padding: 15px 20px;
+            background: linear-gradient(135deg, #f5f7fa 0%, #e9ecef 100%);
+            border: 2px dashed #cbd5e0;
+            border-radius: 12px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            color: #4a5568;
+            font-weight: 500;
         }
-        @keyframes glowing {
-            0% { background-position: 0 0; }
-            50% { background-position: 400% 0; }
-            100% { background-position: 0 0; }
+
+        .file-input-label:hover {
+            background: linear-gradient(135deg, #e9ecef 0%, #dee2e6 100%);
+            border-color: #667eea;
+            color: #667eea;
         }
-        .glow-on-hover:after {
-            z-index: -1;
-            content: '';
-            position: absolute;
+
+        .file-name {
+            display: block;
+            margin-top: 10px;
+            color: #667eea;
+            font-size: 0.9em;
+            font-weight: 500;
+        }
+
+        select {
             width: 100%;
-            height: 100%;
-            background: #111;
-            left: 0;
-            top: 0;
+            padding: 12px 15px;
+            margin: 15px 0;
+            border: 2px solid #e2e8f0;
             border-radius: 10px;
+            background-color: #ffffff;
+            color: #2d3748;
+            font-size: 1em;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            appearance: none;
+            background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+            background-repeat: no-repeat;
+            background-position: right 10px center;
+            background-size: 20px;
+            padding-right: 40px;
+        }
+
+        select:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        /* Button Styles */
+        .btn {
+            width: 100%;
+            padding: 14px 28px;
+            margin: 10px 0;
+            border: none;
+            border-radius: 10px;
+            font-size: 1em;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        .btn:active {
+            transform: scale(0.98);
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: linear-gradient(135deg, #5568d3 0%, #6a3f8f 100%);
+            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-danger {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            color: white;
+        }
+
+        .btn-danger:hover {
+            background: linear-gradient(135deg, #e77fe9 0%, #e34356 100%);
+            box-shadow: 0 6px 20px rgba(245, 87, 108, 0.4);
+        }
+
+        .btn-success {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            color: white;
+        }
+
+        .btn-success:hover {
+            background: linear-gradient(135deg, #3d9ae8 0%, #00d9e6 100%);
+            box-shadow: 0 6px 20px rgba(79, 172, 254, 0.4);
+        }
+
+        /* Grid Layout */
+        .grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-top: 20px;
+        }
+
+        @media (max-width: 768px) {
+            .grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .header h1 {
+                font-size: 2em;
+            }
+            
+            .card {
+                padding: 20px;
+            }
+        }
+
+        /* Loading Spinner */
+        .spinner {
+            display: none;
+            border: 3px solid rgba(255, 255, 255, 0.3);
+            border-top: 3px solid #ffffff;
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .loading .spinner {
+            display: block;
+        }
+
+        .loading .btn-text {
+            display: none;
+        }
+
+        /* Info Section */
+        .info-section {
+            background: rgba(102, 126, 234, 0.1);
+            border-left: 4px solid #667eea;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 20px;
+        }
+
+        .info-section p {
+            color: #4a5568;
+            font-size: 0.9em;
+            line-height: 1.6;
+            margin: 5px 0;
+        }
+
+        .info-section strong {
+            color: #667eea;
+        }
+
+        /* Footer */
+        .footer {
+            text-align: center;
+            margin-top: 30px;
+            color: rgba(255, 255, 255, 0.8);
+            font-size: 0.9em;
+        }
+
+        .footer a {
+            color: #ffffff;
+            text-decoration: none;
+            font-weight: 600;
         }
     </style>
     <script>
+        let selectedFileName = '';
+
+        function updateFileName(input) {
+            const fileNameDisplay = document.getElementById('fileNameDisplay');
+            if (input.files.length > 0) {
+                selectedFileName = input.files[0].name;
+                fileNameDisplay.textContent = '📁 ' + selectedFileName;
+                fileNameDisplay.style.display = 'block';
+            } else {
+                fileNameDisplay.textContent = '';
+                fileNameDisplay.style.display = 'none';
+            }
+        }
+
         function checkFileSize() {
             var fileInput = document.getElementById('fileInput');
+            var uploadBtn = document.getElementById('uploadBtn');
+            
             if (fileInput.files.length > 0) {
-                var fileSize = fileInput.files[0].size; // ukuran file dalam bytes
+                var fileSize = fileInput.files[0].size;
                 var maxSize = 3000 * 1024; 
                 var minSize = 0; 
 
                 if (fileSize > maxSize) {
-                    alert('File terlalu besar! Harap unggah file yang lebih kecil.');
-                    fileInput.value = ''; // hapus file yang dipilih
+                    showNotification('File terlalu besar! Maksimal 3MB.', 'error');
+                    fileInput.value = '';
+                    selectedFileName = '';
+                    document.getElementById('fileNameDisplay').style.display = 'none';
                     return false;
                 } else if (fileSize < minSize) {
-                    alert('File terlalu kecil! Harap unggah file yang lebih besar.');
-                    fileInput.value = ''; // hapus file yang dipilih
+                    showNotification('File tidak valid!', 'error');
+                    fileInput.value = '';
+                    selectedFileName = '';
+                    document.getElementById('fileNameDisplay').style.display = 'none';
                     return false;
                 }
+                
+                // Show loading state
+                uploadBtn.classList.add('loading');
             }
             return true;
         }
@@ -171,20 +376,30 @@
         function deleteFile() {
             var select = document.getElementById('fileSelect');
             var filename = select.options[select.selectedIndex].value;
+            var deleteBtn = document.getElementById('deleteBtn');
+            
             if (!filename) {
-                alert('Pilih file yang ingin dihapus.');
+                showNotification('Pilih file yang ingin dihapus.', 'warning');
                 return;
             }
-            if (confirm('Apakah Anda yakin ingin menghapus file ' + filename + '?')) {
+            
+            if (confirm('Apakah Anda yakin ingin menghapus file "' + filename + '"?')) {
+                deleteBtn.classList.add('loading');
+                
                 var xhr = new XMLHttpRequest();
                 xhr.open('GET', '/delete?filename=' + filename, true);
                 xhr.onload = function() {
+                    deleteBtn.classList.remove('loading');
                     if (xhr.status == 200) {
-                        alert('File ' + filename + 'berhasil dihapus!');
-                        location.reload(); // muat ulang halaman setelah penghapusan berhasil
+                        showNotification('File "' + filename + '" berhasil dihapus!', 'success');
+                        setTimeout(() => location.reload(), 1500);
                     } else {
-                        alert('Gagal menghapus file ' + filename);
+                        showNotification('Gagal menghapus file "' + filename + '"', 'error');
                     }
+                };
+                xhr.onerror = function() {
+                    deleteBtn.classList.remove('loading');
+                    showNotification('Terjadi kesalahan jaringan', 'error');
                 };
                 xhr.send();
             }
@@ -193,45 +408,133 @@
         function setOpeningFile() {
             var select = document.getElementById('fileOpening');
             var filename = select.options[select.selectedIndex].value;
+            var settingBtn = document.getElementById('settingBtn');
+            
             if (!filename) {
-                alert('Pilih file yang ingin dijadikan opening.');
+                showNotification('Pilih file yang ingin dijadikan alarm.', 'warning');
                 return;
             }
-            if (confirm('Apakah Anda yakin ingin menjadikan file ' + filename + ' sebagai opening?')) {
+            
+            if (confirm('Jadikan file "' + filename + '" sebagai alarm?')) {
+                settingBtn.classList.add('loading');
+                
                 var xhr = new XMLHttpRequest();
                 xhr.open('GET', '/opening?filename=' + filename, true);
                 xhr.onload = function() {
+                    settingBtn.classList.remove('loading');
                     if (xhr.status == 200) {
-                        alert('File ' + filename + 'berhasil menjadi opening!');
-                        location.reload(); // muat ulang halaman setelah sukses
+                        showNotification('File "' + filename + '" berhasil dijadikan alarm!', 'success');
+                        setTimeout(() => location.reload(), 1500);
                     } else {
-                        alert('Gagal menjadikan opening pada file ' + filename);
+                        showNotification('Gagal mengatur alarm untuk file "' + filename + '"', 'error');
                     }
+                };
+                xhr.onerror = function() {
+                    settingBtn.classList.remove('loading');
+                    showNotification('Terjadi kesalahan jaringan', 'error');
                 };
                 xhr.send();
             }
         }
 
         async function populateFileList() {
-            var response = await fetch('/list');
-            var fileList = await response.json();
-            var selectElement = document.getElementById('fileSelect');
-            var openingElement = document.getElementById('fileOpening');
-            fileList.forEach(function(fileName) {
-                var option = document.createElement('option');
-                option.value = fileName;
-                option.textContent = fileName;
-                selectElement.appendChild(option);
+            try {
+                var response = await fetch('/list');
+                var fileList = await response.json();
+                var selectElement = document.getElementById('fileSelect');
+                var openingElement = document.getElementById('fileOpening');
+                
+                // Clear existing options
+                selectElement.innerHTML = '<option value="">-- Pilih File --</option>';
+                openingElement.innerHTML = '<option value="">-- Pilih File --</option>';
+                
+                if (fileList.length === 0) {
+                    selectElement.innerHTML = '<option value="">Tidak ada file</option>';
+                    openingElement.innerHTML = '<option value="">Tidak ada file</option>';
+                    return;
+                }
+                
+                fileList.forEach(function(fileName) {
+                    var option = document.createElement('option');
+                    option.value = fileName;
+                    option.textContent = fileName;
+                    selectElement.appendChild(option);
 
-                var optionOpening = document.createElement('option');
-                optionOpening.value = fileName;
-                optionOpening.textContent = fileName;
-                openingElement.appendChild(optionOpening);
-            });
+                    var optionOpening = document.createElement('option');
+                    optionOpening.value = fileName;
+                    optionOpening.textContent = fileName;
+                    openingElement.appendChild(optionOpening);
+                });
+                
+                updateFileCount(fileList.length);
+            } catch (error) {
+                console.error('Error loading file list:', error);
+                showNotification('Gagal memuat daftar file', 'error');
+            }
+        }
+
+        function updateFileCount(count) {
+            const badge = document.querySelector('.status-badge');
+            if (badge) {
+                badge.textContent = count + ' File Tersimpan';
+            }
+        }
+
+        function showNotification(message, type) {
+            // Create notification element
+            const notification = document.createElement('div');
+            notification.className = 'notification notification-' + type;
+            notification.textContent = message;
+            
+            // Add to body
+            document.body.appendChild(notification);
+            
+            // Animate in
+            setTimeout(() => notification.classList.add('show'), 100);
+            
+            // Remove after 3 seconds
+            setTimeout(() => {
+                notification.classList.remove('show');
+                setTimeout(() => notification.remove(), 300);
+            }, 3000);
         }
 
         window.onload = populateFileList;
     </script>
+    <style>
+        /* Notification Styles */
+        .notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 15px 25px;
+            border-radius: 10px;
+            color: white;
+            font-weight: 600;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+            transform: translateX(400px);
+            transition: transform 0.3s ease;
+            z-index: 1000;
+            max-width: 300px;
+        }
+
+        .notification.show {
+            transform: translateX(0);
+        }
+
+        .notification-success {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+        }
+
+        .notification-error {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+        }
+
+        .notification-warning {
+            background: linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%);
+            color: #333;
+        }
+    </style>
 </head>
 <body>
     <video id="background-video" autoplay loop muted>
@@ -240,32 +543,84 @@
     </video>
 
     <div class="container">
-        <h1>Mochi System</h1>
-        <div class="tech-animation">&#129302; Welcome to Mochi System &#129302;</div>
-        
-        <div class="file-upload">
-            <h2>Upload File :</h2>
-            <form action="/upload" method="post" enctype="multipart/form-data" onsubmit="return checkFileSize()">
-                <input type="file" name="file" id="fileInput" accept=".wav" required>
-                <input type="submit" value="Upload" class="glow-on-hover">
-            </form>
+        <!-- Header -->
+        <div class="header">
+            <h1>⌚ Hydra-Time Watch</h1>
+            <p>Audio File Management System</p>
+            <span class="status-badge" id="fileBadge">0 File Tersimpan</span>
         </div>
 
-        <div class="file-actions">
-            <div>
-                <h2>Delete File:</h2>
+        <!-- Upload Section -->
+        <div class="card">
+            <div class="card-header">
+                <div class="card-icon">📤</div>
+                <h2 class="card-title">Upload Audio File</h2>
+            </div>
+            
+            <form action="/upload" method="post" enctype="multipart/form-data" onsubmit="return checkFileSize()">
+                <div class="file-input-wrapper">
+                    <input type="file" name="file" id="fileInput" accept=".wav" onchange="updateFileName(this)" required>
+                    <label for="fileInput" class="file-input-label">
+                        <strong>📁 Pilih File WAV</strong><br>
+                        <small>Klik untuk memilih file (Max: 3MB)</small>
+                    </label>
+                    <span class="file-name" id="fileNameDisplay" style="display: none;"></span>
+                </div>
+                
+                <button type="submit" class="btn btn-primary" id="uploadBtn">
+                    <span class="btn-text">Upload File</span>
+                    <div class="spinner"></div>
+                </button>
+            </form>
+            
+            <div class="info-section">
+                <p><strong>ℹ️ Info:</strong></p>
+                <p>• Format file yang didukung: <strong>.WAV</strong></p>
+                <p>• Ukuran maksimal: <strong>3 MB</strong></p>
+                <p>• File akan tersimpan di SD Card</p>
+            </div>
+        </div>
+
+        <!-- File Actions Grid -->
+        <div class="grid">
+            <!-- Delete Section -->
+            <div class="card">
+                <div class="card-header">
+                    <div class="card-icon">🗑️</div>
+                    <h2 class="card-title">Hapus File</h2>
+                </div>
+                
                 <select id="fileSelect">
-                    <!-- Daftar file akan ditambahkan secara dinamis oleh JavaScript -->
+                    <option value="">-- Pilih File --</option>
                 </select>
-                <button onclick="deleteFile()" class="glow-on-hover">Delete</button>
+                
+                <button onclick="deleteFile()" class="btn btn-danger" id="deleteBtn">
+                    <span class="btn-text">Hapus File</span>
+                    <div class="spinner"></div>
+                </button>
             </div>
-            <div>
-                <h2>Setting Opening:</h2>
+
+            <!-- Alarm Setting Section -->
+            <div class="card">
+                <div class="card-header">
+                    <div class="card-icon">⏰</div>
+                    <h2 class="card-title">Set Alarm</h2>
+                </div>
+                
                 <select id="fileOpening">
-                    <!-- Daftar file akan ditambahkan secara dinamis oleh JavaScript -->
+                    <option value="">-- Pilih File --</option>
                 </select>
-                <button onclick="setOpeningFile()" class="glow-on-hover">Setting</button>
+                
+                <button onclick="setOpeningFile()" class="btn btn-success" id="settingBtn">
+                    <span class="btn-text">Jadikan Alarm</span>
+                    <div class="spinner"></div>
+                </button>
             </div>
+        </div>
+
+        <!-- Footer -->
+        <div class="footer">
+            <p>© 2025 Hydra-Time Watch | <a href="#">ESP32-S3 Smartwatch</a></p>
         </div>
     </div>
 </body>
