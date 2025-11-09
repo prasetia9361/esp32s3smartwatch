@@ -1,5 +1,12 @@
 #include "eez-flow.h"
 #include "vars.h"
+#include "esp_log.h"
+
+#if LVGL_VERSION_MAJOR >= 9
+#include "lvgl/lvgl.h"
+#else
+#include "lvgl.h"
+#endif
 
 using namespace eez;
 
@@ -48,12 +55,31 @@ uint16_t *getDateTime(){
 }
 
 void setDateTime(uint16_t* dt, size_t len){
-    if (dt == nullptr || len < 6) return;
+    if (dt == nullptr || len < 6) {
+        ESP_LOGE("VARS", "Invalid setDateTime parameters");
+        return;
+    }
+    
+    // Log memory before allocation
+    #if LVGL_VERSION_MAJOR >= 9
+    lv_mem_monitor_t mon;
+    lv_mem_monitor(&mon);
+    ESP_LOGI("VARS", "LVGL Memory before setDateTime - Free: %d, Used: %d", 
+             mon.free_size, mon.total_size - mon.free_size);
+    #endif
+    
     eez::ArrayOfInteger flowArray(6);
     for (int i = 0; i < 6; ++i) {
         flowArray.at(i, dt[i]);
     }
     flow::setGlobalVariable(FLOW_GLOBAL_VARIABLE_TIME_INFO_ARRAY, flowArray.value);
+    
+    // Log memory after allocation
+    #if LVGL_VERSION_MAJOR >= 9
+    lv_mem_monitor(&mon);
+    ESP_LOGI("VARS", "LVGL Memory after setDateTime - Free: %d, Used: %d", 
+             mon.free_size, mon.total_size - mon.free_size);
+    #endif
 }
 
 void chargeState(bool isCharge){
@@ -118,12 +144,31 @@ const char *getEndTime(){
 }
 
 void timeAlarm(int32_t *data, size_t len ){
-  if (data == nullptr || len < 2) return;
+  if (data == nullptr || len < 2) {
+    ESP_LOGE("VARS", "Invalid timeAlarm parameters");
+    return;
+  }
+  
+  // Log memory before allocation
+  #if LVGL_VERSION_MAJOR >= 9
+  lv_mem_monitor_t mon;
+  lv_mem_monitor(&mon);
+  ESP_LOGI("VARS", "LVGL Memory before timeAlarm - Free: %d, Used: %d", 
+           mon.free_size, mon.total_size - mon.free_size);
+  #endif
+  
   eez::ArrayOfInteger flowArray(2);
   for (int i = 0; i < 2; ++i) {
       flowArray.at(i, data[i]);
   }
   flow::setGlobalVariable(FLOW_GLOBAL_VARIABLE_H, flowArray.value);
+  
+  // Log memory after allocation
+  #if LVGL_VERSION_MAJOR >= 9
+  lv_mem_monitor(&mon);
+  ESP_LOGI("VARS", "LVGL Memory after timeAlarm - Free: %d, Used: %d", 
+           mon.free_size, mon.total_size - mon.free_size);
+  #endif
 }
 
 void setScheduleTime(const char *startTime, const char *endTime) {

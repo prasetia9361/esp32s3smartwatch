@@ -90,6 +90,8 @@ typedef struct _objects_t {
     lv_obj_t *obj52;
     lv_obj_t *obj53;
     lv_obj_t *obj54;
+    lv_obj_t *obj55;
+    lv_obj_t *obj56;
     lv_obj_t *obj6;
     lv_obj_t *obj7;
     lv_obj_t *obj8;

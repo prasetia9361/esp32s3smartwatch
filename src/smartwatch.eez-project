@@ -1181,7 +1181,8 @@
                             "DEFAULT": {
                               "bg_color": "#12ea5f",
                               "radius": 2,
-                              "border_side": "NONE"
+                              "border_side": "NONE",
+                              "bg_opa": 140
                             }
                           }
                         }
@@ -1384,7 +1385,7 @@
           "type": "SetVariableActionComponent",
           "left": 518,
           "top": 207,
-          "width": 171,
+          "width": 137,
           "height": 57,
           "customInputs": [],
           "customOutputs": [],
@@ -1401,8 +1402,8 @@
           "type": "LVGLActionComponent",
           "left": 411,
           "top": 474,
-          "width": 243,
-          "height": 54,
+          "width": 193,
+          "height": 52,
           "customInputs": [],
           "customOutputs": [],
           "actions": [
@@ -1422,7 +1423,7 @@
           "type": "SetVariableActionComponent",
           "left": 420,
           "top": 558,
-          "width": 146,
+          "width": 117,
           "height": 57,
           "customInputs": [],
           "customOutputs": [],
@@ -1439,7 +1440,7 @@
           "type": "SetVariableActionComponent",
           "left": 420,
           "top": 326,
-          "width": 202,
+          "width": 149,
           "height": 57,
           "customInputs": [],
           "customOutputs": [],
@@ -1512,7 +1513,7 @@
           "eventHandlers": [
             {
               "objID": "e0ff2897-af35-4d0f-bed4-2706bdd91be0",
-              "eventName": "LONG_PRESSED_REPEAT",
+              "eventName": "PRESSED",
               "handlerType": "flow"
             }
           ],
@@ -1521,60 +1522,6 @@
           "widthUnit": "px",
           "heightUnit": "px",
           "children": [
-            {
-              "objID": "1b701b33-415e-4735-aaf7-8c98d64f57d3",
-              "type": "LVGLImageWidget",
-              "left": 0,
-              "top": -1,
-              "width": 368,
-              "height": 448,
-              "customInputs": [],
-              "customOutputs": [],
-              "style": {
-                "objID": "34ffd9f5-eb30-4029-e29c-9f4cf4ece941",
-                "useStyle": "default",
-                "conditionalStyles": [],
-                "childStyles": []
-              },
-              "locked": false,
-              "timeline": [],
-              "eventHandlers": [
-                {
-                  "objID": "e2fd617e-1e8a-4cdf-bb61-68cdf35d1d39",
-                  "eventName": "PRESSED",
-                  "handlerType": "flow"
-                }
-              ],
-              "leftUnit": "px",
-              "topUnit": "px",
-              "widthUnit": "px",
-              "heightUnit": "px",
-              "children": [],
-              "flags": "PRESS_LOCK|ADV_HITTEST|CLICK_FOCUSABLE|GESTURE_BUBBLE|SNAPPABLE|SCROLL_ELASTIC|SCROLL_MOMENTUM|SCROLL_CHAIN",
-              "hiddenFlagType": "literal",
-              "clickableFlag": true,
-              "clickableFlagType": "literal",
-              "flagScrollbarMode": "",
-              "flagScrollDirection": "",
-              "checkedStateType": "literal",
-              "disabledStateType": "literal",
-              "states": "",
-              "localStyles": {
-                "objID": "6fddf1c2-6d7e-42f4-8e53-d6256ad02342",
-                "definition": {
-                  "MAIN": {
-                    "DEFAULT": {
-                      "arc_img_src": "background1",
-                      "bg_img_src": "bg2"
-                    }
-                  }
-                }
-              },
-              "pivotX": 0,
-              "pivotY": 0,
-              "zoom": 256,
-              "angle": 0
-            },
             {
               "objID": "c01af345-85d0-4ac3-df15-23acef24f948",
               "type": "LVGLButtonWidget",
@@ -1986,14 +1933,21 @@
           "states": "",
           "useStyle": "submenu",
           "localStyles": {
-            "objID": "7ef3d20d-931a-4bf9-bb44-ae66e2b1bdd6"
+            "objID": "7ef3d20d-931a-4bf9-bb44-ae66e2b1bdd6",
+            "definition": {
+              "MAIN": {
+                "DEFAULT": {
+                  "bg_img_src": "bg2"
+                }
+              }
+            }
           }
         },
         {
           "objID": "38ccaafb-bf51-42a4-9da9-041702d2dea8",
           "type": "LVGLActionComponent",
-          "left": 454,
-          "top": 175,
+          "left": 453,
+          "top": 197,
           "width": 243,
           "height": 54,
           "customInputs": [],
@@ -2099,7 +2053,7 @@
         {
           "objID": "a243c05c-73af-4696-efa4-a391ac9b745d",
           "source": "929b7374-dd9e-43ee-8aa8-9b78e379ae37",
-          "output": "LONG_PRESSED_REPEAT",
+          "output": "PRESSED",
           "target": "38ccaafb-bf51-42a4-9da9-041702d2dea8",
           "input": "@seqin"
         },
@@ -2129,13 +2083,6 @@
           "source": "a3633739-c462-473f-ee01-391c6edceaf4",
           "output": "RELEASED",
           "target": "c3214c97-481b-46b2-d7a8-cdffb4aaa779",
-          "input": "@seqin"
-        },
-        {
-          "objID": "a480ef2b-08e6-490b-df65-288e9105c56a",
-          "source": "1b701b33-415e-4735-aaf7-8c98d64f57d3",
-          "output": "PRESSED",
-          "target": "38ccaafb-bf51-42a4-9da9-041702d2dea8",
           "input": "@seqin"
         }
       ],
@@ -2803,7 +2750,7 @@
           "left": 102,
           "top": -85,
           "width": 243,
-          "height": 54,
+          "height": 53,
           "customInputs": [],
           "customOutputs": [],
           "actions": [
@@ -2823,8 +2770,8 @@
           "type": "SetVariableActionComponent",
           "left": 436,
           "top": -110,
-          "width": 177,
-          "height": 57,
+          "width": 176,
+          "height": 56,
           "customInputs": [],
           "customOutputs": [],
           "entries": [
@@ -2840,8 +2787,8 @@
           "type": "IsTrueActionComponent",
           "left": 436,
           "top": 218,
-          "width": 188,
-          "height": 70,
+          "width": 187,
+          "height": 69,
           "customInputs": [
             {
               "objID": "868f4027-077a-4eb4-8de0-d2a5d115b777",
@@ -2858,7 +2805,7 @@
           "left": 751,
           "top": 246,
           "width": 152,
-          "height": 79,
+          "height": 78,
           "customInputs": [],
           "customOutputs": [],
           "entries": [
@@ -2879,8 +2826,8 @@
           "type": "IsTrueActionComponent",
           "left": 436,
           "top": -10,
-          "width": 176,
-          "height": 70,
+          "width": 175,
+          "height": 69,
           "customInputs": [
             {
               "objID": "ca7acfca-b8a7-4b0d-e2df-2b87743b5a6d",
@@ -2896,8 +2843,8 @@
           "type": "SetVariableActionComponent",
           "left": 751,
           "top": 13,
-          "width": 134,
-          "height": 79,
+          "width": 133,
+          "height": 78,
           "customInputs": [],
           "customOutputs": [],
           "entries": [
@@ -2916,10 +2863,10 @@
         {
           "objID": "7accdc14-ea9b-4b57-83c5-dc7ee3d529cd",
           "type": "LVGLActionComponent",
-          "left": 467,
-          "top": 334,
-          "width": 274,
-          "height": 54,
+          "left": 734,
+          "top": 372,
+          "width": 273,
+          "height": 53,
           "customInputs": [],
           "customOutputs": [],
           "actions": [
@@ -2937,10 +2884,10 @@
         {
           "objID": "6a9e1552-a703-48be-b007-1bc457013f9c",
           "type": "SetVariableActionComponent",
-          "left": 467,
-          "top": 402,
+          "left": 436,
+          "top": 333,
           "width": 146,
-          "height": 57,
+          "height": 56,
           "customInputs": [],
           "customOutputs": [],
           "entries": [
@@ -2996,17 +2943,17 @@
           "input": "value"
         },
         {
-          "objID": "996c29e7-1a0b-484f-8ee9-3ffc81bea99c",
-          "source": "f15c664d-13ee-44b6-d5d2-a4cda6996540",
-          "output": "PRESSED",
-          "target": "7accdc14-ea9b-4b57-83c5-dc7ee3d529cd",
-          "input": "@seqin"
-        },
-        {
-          "objID": "f440596e-30ad-49f6-c3ce-8bc533410750",
+          "objID": "c91f4ddd-02d2-4a6b-aa1c-1d14aca97a9f",
           "source": "f15c664d-13ee-44b6-d5d2-a4cda6996540",
           "output": "PRESSED",
           "target": "6a9e1552-a703-48be-b007-1bc457013f9c",
+          "input": "@seqin"
+        },
+        {
+          "objID": "50e6f719-5ea2-49f8-f9b9-834934e30f2d",
+          "source": "6a9e1552-a703-48be-b007-1bc457013f9c",
+          "output": "@seqout",
+          "target": "7accdc14-ea9b-4b57-83c5-dc7ee3d529cd",
           "input": "@seqin"
         }
       ],
@@ -3453,13 +3400,7 @@
                 "childStyles": []
               },
               "timeline": [],
-              "eventHandlers": [
-                {
-                  "objID": "974e98e6-487d-4295-c185-f3212e3ad9e8",
-                  "eventName": "PRESSED",
-                  "handlerType": "flow"
-                }
-              ],
+              "eventHandlers": [],
               "identifier": "",
               "leftUnit": "px",
               "topUnit": "px",
@@ -3900,47 +3841,6 @@
               }
             },
             {
-              "objID": "9f01322b-7dc4-410e-88f7-e4657c51088e",
-              "type": "LVGLKeyboardWidget",
-              "left": 0,
-              "top": 0,
-              "width": 368,
-              "height": 200,
-              "customInputs": [],
-              "customOutputs": [],
-              "style": {
-                "objID": "92cab986-c466-4edc-937e-ad0932f6c82e",
-                "useStyle": "default",
-                "conditionalStyles": [],
-                "childStyles": []
-              },
-              "timeline": [],
-              "eventHandlers": [],
-              "identifier": "keyboardDay",
-              "leftUnit": "px",
-              "topUnit": "px",
-              "widthUnit": "px",
-              "heightUnit": "px",
-              "children": [],
-              "flags": "PRESS_LOCK|CLICK_FOCUSABLE|GESTURE_BUBBLE|SNAPPABLE|SCROLLABLE|SCROLL_ELASTIC|SCROLL_MOMENTUM|SCROLL_CHAIN",
-              "hiddenFlag": "!keyboarddd",
-              "hiddenFlagType": "expression",
-              "clickableFlag": true,
-              "clickableFlagType": "literal",
-              "flagScrollbarMode": "",
-              "flagScrollDirection": "",
-              "checkedState": false,
-              "checkedStateType": "literal",
-              "disabledStateType": "literal",
-              "states": "",
-              "useStyle": "",
-              "localStyles": {
-                "objID": "2d4ae75f-7e94-4e74-a629-a9e2085dbe72"
-              },
-              "textarea": "inputday",
-              "mode": "NUMBER"
-            },
-            {
               "objID": "daf05cb7-9ab7-4a4f-e53a-0ba4b2710179",
               "type": "LVGLButtonWidget",
               "left": 284,
@@ -4182,7 +4082,58 @@
               "topUnit": "px",
               "widthUnit": "px",
               "heightUnit": "px",
-              "children": [],
+              "children": [
+                {
+                  "objID": "89174f56-ad96-4b4b-caf1-f128fad09b6a",
+                  "type": "LVGLButtonWidget",
+                  "left": 222,
+                  "top": 47,
+                  "width": 135,
+                  "height": 45,
+                  "customInputs": [],
+                  "customOutputs": [],
+                  "style": {
+                    "objID": "7efe3175-edf1-49a3-92c2-8394426db477",
+                    "useStyle": "default",
+                    "conditionalStyles": [],
+                    "childStyles": []
+                  },
+                  "timeline": [],
+                  "eventHandlers": [
+                    {
+                      "objID": "277c1860-e4ed-4475-a63e-943edd7ec644",
+                      "eventName": "PRESSED",
+                      "handlerType": "flow"
+                    }
+                  ],
+                  "leftUnit": "px",
+                  "topUnit": "px",
+                  "widthUnit": "px",
+                  "heightUnit": "px",
+                  "children": [],
+                  "flags": "PRESS_LOCK|CLICK_FOCUSABLE|GESTURE_BUBBLE|SNAPPABLE|SCROLL_ELASTIC|SCROLL_ON_FOCUS|SCROLL_MOMENTUM|SCROLL_CHAIN",
+                  "hiddenFlagType": "literal",
+                  "clickableFlag": true,
+                  "clickableFlagType": "literal",
+                  "flagScrollbarMode": "",
+                  "flagScrollDirection": "",
+                  "checkedStateType": "literal",
+                  "disabledStateType": "literal",
+                  "states": "",
+                  "localStyles": {
+                    "objID": "bc659704-e0a8-4733-d49a-2ac5b90fbd6b",
+                    "definition": {
+                      "MAIN": {
+                        "DEFAULT": {
+                          "bg_opa": 0,
+                          "border_side": "NONE",
+                          "shadow_opa": 0
+                        }
+                      }
+                    }
+                  }
+                }
+              ],
               "flags": "PRESS_LOCK|CLICK_FOCUSABLE|GESTURE_BUBBLE|SNAPPABLE|SCROLLABLE|SCROLL_ELASTIC|SCROLL_MOMENTUM|SCROLL_CHAIN",
               "hiddenFlag": "!keyboardyear",
               "hiddenFlagType": "expression",
@@ -4199,6 +4150,98 @@
                 "objID": "26d6fc7b-7552-49bc-ac17-6f17219f8ea6"
               },
               "textarea": "inputyear",
+              "mode": "NUMBER"
+            },
+            {
+              "objID": "9f01322b-7dc4-410e-88f7-e4657c51088e",
+              "type": "LVGLKeyboardWidget",
+              "left": 0,
+              "top": 0,
+              "width": 368,
+              "height": 200,
+              "customInputs": [],
+              "customOutputs": [],
+              "style": {
+                "objID": "92cab986-c466-4edc-937e-ad0932f6c82e",
+                "useStyle": "default",
+                "conditionalStyles": [],
+                "childStyles": []
+              },
+              "timeline": [],
+              "eventHandlers": [],
+              "identifier": "keyboardDay",
+              "leftUnit": "px",
+              "topUnit": "px",
+              "widthUnit": "px",
+              "heightUnit": "px",
+              "children": [
+                {
+                  "objID": "46b9ead4-8eeb-41e6-f18f-3697efb5feba",
+                  "type": "LVGLButtonWidget",
+                  "left": 222,
+                  "top": 47,
+                  "width": 135,
+                  "height": 45,
+                  "customInputs": [],
+                  "customOutputs": [],
+                  "style": {
+                    "objID": "2aa8f190-7b7e-4969-8d95-722fafbb66e4",
+                    "useStyle": "default",
+                    "conditionalStyles": [],
+                    "childStyles": []
+                  },
+                  "timeline": [],
+                  "eventHandlers": [
+                    {
+                      "objID": "58f8cad1-cdce-4e23-db4a-a43b1a784ff8",
+                      "eventName": "PRESSED",
+                      "handlerType": "flow"
+                    }
+                  ],
+                  "leftUnit": "px",
+                  "topUnit": "px",
+                  "widthUnit": "px",
+                  "heightUnit": "px",
+                  "children": [],
+                  "flags": "PRESS_LOCK|CLICK_FOCUSABLE|GESTURE_BUBBLE|SNAPPABLE|SCROLL_ELASTIC|SCROLL_ON_FOCUS|SCROLL_MOMENTUM|SCROLL_CHAIN",
+                  "hiddenFlagType": "literal",
+                  "clickableFlag": true,
+                  "clickableFlagType": "literal",
+                  "flagScrollbarMode": "",
+                  "flagScrollDirection": "",
+                  "checkedStateType": "literal",
+                  "disabledStateType": "literal",
+                  "states": "",
+                  "localStyles": {
+                    "objID": "99b1d335-4ffd-46cf-e39e-bd9340ed2e77",
+                    "definition": {
+                      "MAIN": {
+                        "DEFAULT": {
+                          "bg_opa": 0,
+                          "border_side": "NONE",
+                          "shadow_opa": 0
+                        }
+                      }
+                    }
+                  }
+                }
+              ],
+              "flags": "PRESS_LOCK|CLICK_FOCUSABLE|GESTURE_BUBBLE|SNAPPABLE|SCROLLABLE|SCROLL_ELASTIC|SCROLL_MOMENTUM|SCROLL_CHAIN",
+              "hiddenFlag": "!keyboarddd",
+              "hiddenFlagType": "expression",
+              "clickableFlag": true,
+              "clickableFlagType": "literal",
+              "flagScrollbarMode": "",
+              "flagScrollDirection": "",
+              "checkedState": false,
+              "checkedStateType": "literal",
+              "disabledStateType": "literal",
+              "states": "",
+              "useStyle": "",
+              "localStyles": {
+                "objID": "2d4ae75f-7e94-4e74-a629-a9e2085dbe72"
+              },
+              "textarea": "inputday",
               "mode": "NUMBER"
             }
           ],
@@ -4219,8 +4262,8 @@
           "type": "SetVariableActionComponent",
           "left": -190,
           "top": 83,
-          "width": 171,
-          "height": 79,
+          "width": 170,
+          "height": 78,
           "customInputs": [],
           "customOutputs": [],
           "entries": [
@@ -4241,8 +4284,8 @@
           "type": "SetVariableActionComponent",
           "left": 495,
           "top": 64,
-          "width": 165,
-          "height": 79,
+          "width": 164,
+          "height": 78,
           "customInputs": [],
           "customOutputs": [],
           "entries": [
@@ -4259,34 +4302,12 @@
           ]
         },
         {
-          "objID": "a289ce70-93e2-425e-905c-566d06c6bad9",
-          "type": "SetVariableActionComponent",
-          "left": 506,
-          "top": 264,
-          "width": 171,
-          "height": 79,
-          "customInputs": [],
-          "customOutputs": [],
-          "entries": [
-            {
-              "objID": "aa42e95b-af94-471a-f3e1-bc5bb077778b",
-              "variable": "keyboarddd",
-              "value": "false"
-            },
-            {
-              "objID": "3d940e1a-cce0-4978-d2c6-d7ee80a59413",
-              "variable": "keyboardyear",
-              "value": "false"
-            }
-          ]
-        },
-        {
           "objID": "90d09216-045a-4544-dc04-6ded4f1987bc",
           "type": "LVGLActionComponent",
           "left": 46,
           "top": -168,
-          "width": 262,
-          "height": 54,
+          "width": 261,
+          "height": 53,
           "customInputs": [],
           "customOutputs": [],
           "actions": [
@@ -4307,7 +4328,7 @@
           "left": 482,
           "top": -24,
           "width": 140,
-          "height": 57,
+          "height": 56,
           "customInputs": [],
           "customOutputs": [],
           "entries": [
@@ -4315,6 +4336,40 @@
               "objID": "52649cc8-e987-4567-f085-dc36f8dd4beb",
               "variable": "saveTime",
               "value": "true"
+            }
+          ]
+        },
+        {
+          "objID": "f14b0968-5d35-42ff-f636-caa4bc875e8f",
+          "type": "SetVariableActionComponent",
+          "left": 489,
+          "top": 369,
+          "width": 170,
+          "height": 56,
+          "customInputs": [],
+          "customOutputs": [],
+          "entries": [
+            {
+              "objID": "bc44a67d-d0d1-49de-9133-710367e6fbc4",
+              "variable": "keyboardyear",
+              "value": "false"
+            }
+          ]
+        },
+        {
+          "objID": "3ac5cf5f-8e51-4c7a-f90b-fe4208b198f5",
+          "type": "SetVariableActionComponent",
+          "left": 495,
+          "top": 476,
+          "width": 158,
+          "height": 56,
+          "customInputs": [],
+          "customOutputs": [],
+          "entries": [
+            {
+              "objID": "a1573446-8ca3-4f3f-d85d-46ca32f806ad",
+              "variable": "keyboarddd",
+              "value": "false"
             }
           ]
         }
@@ -4335,13 +4390,6 @@
           "input": "@seqin"
         },
         {
-          "objID": "1043d7ca-e5d2-478b-b251-2a12ead45af8",
-          "source": "efd84370-c06b-4ea6-f66b-834f31d0480e",
-          "output": "PRESSED",
-          "target": "a289ce70-93e2-425e-905c-566d06c6bad9",
-          "input": "@seqin"
-        },
-        {
           "objID": "5fb76397-561b-4075-d186-55db6b713079",
           "source": "db9a792f-213d-4355-d1d7-bafd0febef50",
           "output": "PRESSED",
@@ -4353,6 +4401,20 @@
           "source": "daf05cb7-9ab7-4a4f-e53a-0ba4b2710179",
           "output": "PRESSED",
           "target": "8b910ea7-4e22-4d0e-acec-a60e26bb6d4a",
+          "input": "@seqin"
+        },
+        {
+          "objID": "83e7e89e-e112-49fa-c0e4-a0f5d576140d",
+          "source": "89174f56-ad96-4b4b-caf1-f128fad09b6a",
+          "output": "PRESSED",
+          "target": "f14b0968-5d35-42ff-f636-caa4bc875e8f",
+          "input": "@seqin"
+        },
+        {
+          "objID": "b057d41f-9ea5-4016-87de-d5d5ad83c637",
+          "source": "46b9ead4-8eeb-41e6-f18f-3697efb5feba",
+          "output": "PRESSED",
+          "target": "3ac5cf5f-8e51-4c7a-f90b-fe4208b198f5",
           "input": "@seqin"
         }
       ],
@@ -5434,13 +5496,7 @@
               },
               "locked": false,
               "timeline": [],
-              "eventHandlers": [
-                {
-                  "objID": "6208de58-6c9c-4593-9874-333383cc06d0",
-                  "eventName": "PRESSED",
-                  "handlerType": "flow"
-                }
-              ],
+              "eventHandlers": [],
               "leftUnit": "px",
               "topUnit": "px",
               "widthUnit": "px",
@@ -5957,7 +6013,7 @@
             {
               "objID": "b2ddae2e-15db-43e5-d159-fdfedce6040f",
               "type": "LVGLKeyboardWidget",
-              "left": -1,
+              "left": -2,
               "top": 0,
               "width": 369,
               "height": 238,
@@ -5976,7 +6032,58 @@
               "topUnit": "px",
               "widthUnit": "px",
               "heightUnit": "px",
-              "children": [],
+              "children": [
+                {
+                  "objID": "5ec52135-f844-4e7f-f90b-3547ea1f9011",
+                  "type": "LVGLButtonWidget",
+                  "left": 312,
+                  "top": 178,
+                  "width": 45,
+                  "height": 45,
+                  "customInputs": [],
+                  "customOutputs": [],
+                  "style": {
+                    "objID": "8373773d-e735-499c-d1a3-d90ad26d10dc",
+                    "useStyle": "default",
+                    "conditionalStyles": [],
+                    "childStyles": []
+                  },
+                  "timeline": [],
+                  "eventHandlers": [
+                    {
+                      "objID": "595877d6-f17e-4f18-a538-1734a5b2153f",
+                      "eventName": "PRESSED",
+                      "handlerType": "flow"
+                    }
+                  ],
+                  "leftUnit": "px",
+                  "topUnit": "px",
+                  "widthUnit": "px",
+                  "heightUnit": "px",
+                  "children": [],
+                  "flags": "PRESS_LOCK|CLICK_FOCUSABLE|GESTURE_BUBBLE|SNAPPABLE|SCROLL_ELASTIC|SCROLL_ON_FOCUS|SCROLL_MOMENTUM|SCROLL_CHAIN",
+                  "hiddenFlagType": "literal",
+                  "clickableFlag": true,
+                  "clickableFlagType": "literal",
+                  "flagScrollbarMode": "",
+                  "flagScrollDirection": "",
+                  "checkedStateType": "literal",
+                  "disabledStateType": "literal",
+                  "states": "",
+                  "localStyles": {
+                    "objID": "fe0ceebf-f997-4b22-b888-788a4aacbefa",
+                    "definition": {
+                      "MAIN": {
+                        "DEFAULT": {
+                          "bg_opa": 0,
+                          "border_side": "NONE",
+                          "shadow_opa": 0
+                        }
+                      }
+                    }
+                  }
+                }
+              ],
               "flags": "PRESS_LOCK|CLICK_FOCUSABLE|GESTURE_BUBBLE|SNAPPABLE|SCROLLABLE|SCROLL_ELASTIC|SCROLL_MOMENTUM|SCROLL_CHAIN",
               "hiddenFlag": "!keyboarnama",
               "hiddenFlagType": "expression",
@@ -6003,7 +6110,7 @@
             {
               "objID": "c1485fa3-f527-40e2-b8da-d96f7e472922",
               "type": "LVGLKeyboardWidget",
-              "left": -4,
+              "left": -2,
               "top": 0,
               "width": 369,
               "height": 238,
@@ -6022,7 +6129,58 @@
               "topUnit": "px",
               "widthUnit": "px",
               "heightUnit": "px",
-              "children": [],
+              "children": [
+                {
+                  "objID": "aedffb0d-9712-457d-ec84-1c177009402b",
+                  "type": "LVGLButtonWidget",
+                  "left": 224,
+                  "top": 63,
+                  "width": 135,
+                  "height": 45,
+                  "customInputs": [],
+                  "customOutputs": [],
+                  "style": {
+                    "objID": "278b2591-b337-4a28-da8f-b5e9f7c8c600",
+                    "useStyle": "default",
+                    "conditionalStyles": [],
+                    "childStyles": []
+                  },
+                  "timeline": [],
+                  "eventHandlers": [
+                    {
+                      "objID": "e0d5d58f-f845-485b-8928-fc9ba780e95f",
+                      "eventName": "PRESSED",
+                      "handlerType": "flow"
+                    }
+                  ],
+                  "leftUnit": "px",
+                  "topUnit": "px",
+                  "widthUnit": "px",
+                  "heightUnit": "px",
+                  "children": [],
+                  "flags": "PRESS_LOCK|CLICK_FOCUSABLE|GESTURE_BUBBLE|SNAPPABLE|SCROLL_ELASTIC|SCROLL_ON_FOCUS|SCROLL_MOMENTUM|SCROLL_CHAIN",
+                  "hiddenFlagType": "literal",
+                  "clickableFlag": true,
+                  "clickableFlagType": "literal",
+                  "flagScrollbarMode": "",
+                  "flagScrollDirection": "",
+                  "checkedStateType": "literal",
+                  "disabledStateType": "literal",
+                  "states": "",
+                  "localStyles": {
+                    "objID": "b40b90c4-7bd9-466f-ef20-6f6bec811bd1",
+                    "definition": {
+                      "MAIN": {
+                        "DEFAULT": {
+                          "bg_opa": 0,
+                          "border_side": "NONE",
+                          "shadow_opa": 0
+                        }
+                      }
+                    }
+                  }
+                }
+              ],
               "flags": "PRESS_LOCK|CLICK_FOCUSABLE|GESTURE_BUBBLE|SNAPPABLE|SCROLLABLE|SCROLL_ELASTIC|SCROLL_MOMENTUM|SCROLL_CHAIN",
               "hiddenFlag": "!keyboardusia",
               "hiddenFlagType": "expression",
@@ -6050,7 +6208,7 @@
               "objID": "3cf51c25-8935-4862-9b7b-284f12d9b6a3",
               "type": "LVGLKeyboardWidget",
               "left": -1,
-              "top": 2,
+              "top": 1,
               "width": 369,
               "height": 238,
               "customInputs": [],
@@ -6068,7 +6226,58 @@
               "topUnit": "px",
               "widthUnit": "px",
               "heightUnit": "px",
-              "children": [],
+              "children": [
+                {
+                  "objID": "da3dfa4a-0297-444c-f4cd-408aa61560c8",
+                  "type": "LVGLButtonWidget",
+                  "left": 224,
+                  "top": 63,
+                  "width": 135,
+                  "height": 45,
+                  "customInputs": [],
+                  "customOutputs": [],
+                  "style": {
+                    "objID": "917042bc-27e8-439c-d1ed-cdf158e5f4af",
+                    "useStyle": "default",
+                    "conditionalStyles": [],
+                    "childStyles": []
+                  },
+                  "timeline": [],
+                  "eventHandlers": [
+                    {
+                      "objID": "06120092-ea4b-4548-a93a-3d2c88274471",
+                      "eventName": "PRESSED",
+                      "handlerType": "flow"
+                    }
+                  ],
+                  "leftUnit": "px",
+                  "topUnit": "px",
+                  "widthUnit": "px",
+                  "heightUnit": "px",
+                  "children": [],
+                  "flags": "PRESS_LOCK|CLICK_FOCUSABLE|GESTURE_BUBBLE|SNAPPABLE|SCROLL_ELASTIC|SCROLL_ON_FOCUS|SCROLL_MOMENTUM|SCROLL_CHAIN",
+                  "hiddenFlagType": "literal",
+                  "clickableFlag": true,
+                  "clickableFlagType": "literal",
+                  "flagScrollbarMode": "",
+                  "flagScrollDirection": "",
+                  "checkedStateType": "literal",
+                  "disabledStateType": "literal",
+                  "states": "",
+                  "localStyles": {
+                    "objID": "edd00645-2ab8-4c22-e276-33bbf1b3db8c",
+                    "definition": {
+                      "MAIN": {
+                        "DEFAULT": {
+                          "bg_opa": 0,
+                          "border_side": "NONE",
+                          "shadow_opa": 0
+                        }
+                      }
+                    }
+                  }
+                }
+              ],
               "flags": "PRESS_LOCK|CLICK_FOCUSABLE|GESTURE_BUBBLE|SNAPPABLE|SCROLLABLE|SCROLL_ELASTIC|SCROLL_MOMENTUM|SCROLL_CHAIN",
               "hiddenFlag": "!keyboardbb",
               "hiddenFlagType": "expression",
@@ -6260,33 +6469,6 @@
           ]
         },
         {
-          "objID": "0a51513b-94cf-454d-9c1c-e108bf91ced3",
-          "type": "SetVariableActionComponent",
-          "left": 454,
-          "top": 350,
-          "width": 171,
-          "height": 101,
-          "customInputs": [],
-          "customOutputs": [],
-          "entries": [
-            {
-              "objID": "7271f534-fd3c-4d87-bfd5-ca5954c11354",
-              "variable": "keyboarnama",
-              "value": "false"
-            },
-            {
-              "objID": "da197f0f-a98f-4962-e2db-59e9ece83e41",
-              "variable": "keyboardbb",
-              "value": "false"
-            },
-            {
-              "objID": "e4ee99e1-c421-4468-de5c-43d89ab8afc8",
-              "variable": "keyboardusia",
-              "value": "false"
-            }
-          ]
-        },
-        {
           "objID": "aff13acd-f63f-48c5-c099-16f34bc0ff4e",
           "type": "SetVariableActionComponent",
           "left": 454,
@@ -6316,8 +6498,8 @@
         {
           "objID": "405cfa4e-3f91-42fb-aa7f-3bd229b0a31b",
           "type": "SetVariableActionComponent",
-          "left": 460,
-          "top": 486,
+          "left": 466,
+          "top": 560,
           "width": 171,
           "height": 101,
           "customInputs": [],
@@ -6596,6 +6778,57 @@
               "value": "false"
             }
           ]
+        },
+        {
+          "objID": "aa0beb1a-4e36-48d6-c62c-12c33efec7df",
+          "type": "SetVariableActionComponent",
+          "left": 466,
+          "top": 334,
+          "width": 165,
+          "height": 57,
+          "customInputs": [],
+          "customOutputs": [],
+          "entries": [
+            {
+              "objID": "b2fd50ce-76cf-413f-dbdc-37ce8cf27954",
+              "variable": "keyboarnama",
+              "value": "false"
+            }
+          ]
+        },
+        {
+          "objID": "e78f8330-422b-48ae-9aad-7383b6b488b2",
+          "type": "SetVariableActionComponent",
+          "left": 466,
+          "top": 403,
+          "width": 171,
+          "height": 57,
+          "customInputs": [],
+          "customOutputs": [],
+          "entries": [
+            {
+              "objID": "b5d2966c-016b-4dc1-882f-565e5cba4daa",
+              "variable": "keyboardusia",
+              "value": "false"
+            }
+          ]
+        },
+        {
+          "objID": "3436db3e-dda2-42f3-911a-d62d06a9b3ce",
+          "type": "SetVariableActionComponent",
+          "left": 466,
+          "top": 473,
+          "width": 159,
+          "height": 57,
+          "customInputs": [],
+          "customOutputs": [],
+          "entries": [
+            {
+              "objID": "ac5e8ec5-d89f-48f2-d94e-d75fc7fbff10",
+              "variable": "keyboardbb",
+              "value": "false"
+            }
+          ]
         }
       ],
       "connectionLines": [
@@ -6611,13 +6844,6 @@
           "source": "39632abf-fb2f-48bc-b909-283e5ee08047",
           "output": "CLICKED",
           "target": "7ec77067-424a-4ebe-fc6b-37065f15af1d",
-          "input": "@seqin"
-        },
-        {
-          "objID": "a289f71e-8ec0-4bd9-d00e-215ffe603173",
-          "source": "33a1b6a0-7d86-4159-973e-3dec9ccb959d",
-          "output": "PRESSED",
-          "target": "0a51513b-94cf-454d-9c1c-e108bf91ced3",
           "input": "@seqin"
         },
         {
@@ -6758,6 +6984,27 @@
           "source": "bae55836-2ec2-4fb6-b3c4-31779e94f27b",
           "output": "True",
           "target": "7285fa9c-b1ba-4612-93d8-b184c3b71f66",
+          "input": "@seqin"
+        },
+        {
+          "objID": "0006272f-eab8-420b-fa59-0daf7a3a3e5f",
+          "source": "5ec52135-f844-4e7f-f90b-3547ea1f9011",
+          "output": "PRESSED",
+          "target": "aa0beb1a-4e36-48d6-c62c-12c33efec7df",
+          "input": "@seqin"
+        },
+        {
+          "objID": "5e5cded5-249d-4539-b08d-03e88bf9f188",
+          "source": "aedffb0d-9712-457d-ec84-1c177009402b",
+          "output": "PRESSED",
+          "target": "e78f8330-422b-48ae-9aad-7383b6b488b2",
+          "input": "@seqin"
+        },
+        {
+          "objID": "0904d05b-4b09-46f4-b06f-1a425f4a49c8",
+          "source": "da3dfa4a-0297-444c-f4cd-408aa61560c8",
+          "output": "PRESSED",
+          "target": "3436db3e-dda2-42f3-911a-d62d06a9b3ce",
           "input": "@seqin"
         }
       ],
@@ -7898,8 +8145,8 @@
           "type": "LVGLActionComponent",
           "left": 471,
           "top": -96,
-          "width": 250,
-          "height": 54,
+          "width": 249,
+          "height": 53,
           "customInputs": [],
           "customOutputs": [],
           "actions": [
@@ -7920,7 +8167,7 @@
           "left": 496,
           "top": -9,
           "width": 779,
-          "height": 167,
+          "height": 165,
           "customInputs": [],
           "customOutputs": [],
           "entries": [

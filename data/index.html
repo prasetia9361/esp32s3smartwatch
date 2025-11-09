@@ -142,8 +142,17 @@
             margin: 20px 0;
         }
 
-        input[type="file"] {
-            display: none;
+        /* Keep the file input visually hidden but accessible on mobile by
+           overlaying it on the label. Some Android browsers block programmatic
+           clicks on inputs set to display:none, so we use opacity and
+           absolute positioning instead. */
+        .file-input-wrapper input[type="file"] {
+            position: absolute;
+            inset: 0; /* top:0; right:0; bottom:0; left:0; */
+            width: 100%;
+            height: 100%;
+            opacity: 0;
+            cursor: pointer;
         }
 
         .file-input-label {
@@ -328,9 +337,108 @@
             text-decoration: none;
             font-weight: 600;
         }
+
+        /* Captive Portal WebView Helper */
+        #chromeHelper {
+            background: linear-gradient(135deg, #ff9500 0%, #ff6b00 100%);
+            color: white;
+            padding: 16px 24px;
+            border-radius: 12px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 15px rgba(255, 107, 0, 0.3);
+            display: none; /* Hidden by default, shown when WebView detected */
+            animation: slideDown 0.5s ease;
+        }
+
+        #chromeHelper .helper-content {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            flex-wrap: wrap;
+        }
+
+        #chromeHelper .helper-icon {
+            font-size: 32px;
+            flex-shrink: 0;
+        }
+
+        #chromeHelper .helper-text {
+            flex: 1;
+            min-width: 200px;
+        }
+
+        #chromeHelper .helper-text strong {
+            display: block;
+            font-size: 16px;
+            margin-bottom: 5px;
+        }
+
+        #chromeHelper .helper-text small {
+            font-size: 13px;
+            opacity: 0.95;
+        }
+
+        #chromeHelper button {
+            background: white;
+            color: #ff6b00;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-weight: 700;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+        }
+
+        #chromeHelper button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+        }
+
+        @keyframes slideDown {
+            from {
+                opacity: 0;
+                transform: translateY(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
     </style>
     <script>
         let selectedFileName = '';
+
+        // Detect if running in Android Captive Portal WebView
+        function detectCaptivePortal() {
+            const ua = navigator.userAgent.toLowerCase();
+            const isAndroid = ua.indexOf('android') > -1;
+            const isWebView = ua.indexOf('wv') > -1 || // Android WebView
+                             ua.indexOf('captiveportal') > -1 || // Some Android versions
+                             !window.navigator.standalone && // iOS WebView detection
+                             /safari/.test(ua) === false; // Not Safari
+            
+            // Show helper if in WebView on Android
+            if (isAndroid && isWebView) {
+                document.getElementById('chromeHelper').style.display = 'block';
+            }
+        }
+
+        // Open current page in Chrome browser
+        function openInChrome() {
+            const currentUrl = window.location.href;
+            // Android intent to open in Chrome
+            const chromeIntent = 'intent://' + currentUrl.replace(/^https?:\/\//, '') + '#Intent;scheme=http;package=com.android.chrome;end';
+            
+            // Try to open in Chrome
+            window.location.href = chromeIntent;
+            
+            // Fallback: show instruction if intent doesn't work
+            setTimeout(() => {
+                alert('Salin URL ini dan buka di Chrome:\n\n' + currentUrl);
+            }, 1000);
+        }
 
         function updateFileName(input) {
             const fileNameDisplay = document.getElementById('fileNameDisplay');
@@ -499,7 +607,10 @@
             }, 3000);
         }
 
-        window.onload = populateFileList;
+        window.onload = function() {
+            populateFileList();
+            detectCaptivePortal();
+        };
     </script>
     <style>
         /* Notification Styles */
@@ -548,6 +659,20 @@
             <h1>⌚ Hydra-Time Watch</h1>
             <p>Audio File Management System</p>
             <span class="status-badge" id="fileBadge">0 File Tersimpan</span>
+            
+            <!-- Android Captive Portal Helper -->
+            <div id="chromeHelper" style="margin-top: 15px;">
+                <div class="helper-content">
+                    <span class="helper-icon">⚠️</span>
+                    <div class="helper-text">
+                        <strong>Untuk Upload File</strong>
+                        <small>Buka halaman ini di Chrome untuk mengakses file manager</small>
+                    </div>
+                    <button onclick="openInChrome()">
+                        🌐 Buka Chrome
+                    </button>
+                </div>
+            </div>
         </div>
 
         <!-- Upload Section -->
@@ -559,8 +684,12 @@
             
             <form action="/upload" method="post" enctype="multipart/form-data" onsubmit="return checkFileSize()">
                 <div class="file-input-wrapper">
-                    <input type="file" name="file" id="fileInput" accept=".wav" onchange="updateFileName(this)" required>
-                    <label for="fileInput" class="file-input-label">
+                    <!-- Support a wider set of accept types for Android pickers -->
+                    <input type="file" name="file" id="fileInput"
+                           accept="audio/wav,audio/x-wav,audio/*,.wav,.WAV,.wave"
+                           onchange="updateFileName(this)" required>
+                    <!-- Make the label explicitly trigger the input for maximum compatibility on mobile -->
+                    <label for="fileInput" class="file-input-label" onclick="document.getElementById('fileInput').click(); return false;" role="button" tabindex="0">
                         <strong>📁 Pilih File WAV</strong><br>
                         <small>Klik untuk memilih file (Max: 3MB)</small>
                     </label>

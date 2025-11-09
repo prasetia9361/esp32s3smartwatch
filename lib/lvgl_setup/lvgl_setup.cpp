@@ -4,7 +4,7 @@
 #include "freertos/FreeRTOS.h"
 #include "freertos/semphr.h"
 // Periode tick LVGL dalam milidetik. LVGL menggunakan ini untuk menangani animasi dan tugas lainnya.
-#define EXAMPLE_LVGL_TICK_PERIOD_MS 2
+#define EXAMPLE_LVGL_TICK_PERIOD_MS 5
 
 // Variabel untuk brightness management
 static uint8_t currentBrightness = 200;    // Kecerahan saat ini

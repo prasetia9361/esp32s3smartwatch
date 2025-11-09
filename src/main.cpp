@@ -253,6 +253,11 @@ void setup() {
   lvgl_init();
   ui_init();
   ESP_LOGI(TAG, "UI initialized");
+  
+  // Watchdog temporarily disabled - causing errors with new API
+  // TODO: Re-implement with proper task registration
+  // esp_task_wdt_config_t wdt_config = {...};
+  // esp_task_wdt_init(&wdt_config);
 
   TaskHandle_t wifiTaskHandle;
   xTaskCreatePinnedToCore(
@@ -260,9 +265,9 @@ void setup() {
       "WiFiTask",      
       4096,            
       NULL,            
-      1,               
+      2,               // Priority 2 (lower than loop/UI)
       &wifiTaskHandle, 
-      0);                           
+      0);              // Core 0
 
   TaskHandle_t sensorTaskHandle;
   xTaskCreatePinnedToCore(
@@ -270,9 +275,9 @@ void setup() {
       "sensorTask",    
       8192,
       NULL,            
-      1,               
+      2,               // Priority 2 (lower than loop/UI)
       &sensorTaskHandle,
-      1); 
+      1);              // Core 1
 
   TaskHandle_t alarmTaskHandle;
   xTaskCreatePinnedToCore(
@@ -280,9 +285,9 @@ void setup() {
       "alarmTask",
       16384,
       NULL,
-      1,
+      3,               // Priority 3 (lowest - only runs when needed)
       &alarmTaskHandle,
-      0);
+      0);              // Core 0
   
   ESP_LOGI(TAG, "All tasks created successfully");
 }
@@ -293,7 +298,10 @@ void loop() {
   
   // Handle auto-sleep untuk brightness management
   handleAutoSleep();
-  vTaskDelay(5);
+  
+  // Give more time for other tasks to execute
+  // 10ms delay ensures LVGL gets ~100 updates per second which is plenty
+  vTaskDelay(pdMS_TO_TICKS(10));
 }
 
 void applyWiFiMode(void *param){
@@ -349,7 +357,8 @@ void applyWiFiMode(void *param){
       }
     }
 
-    vTaskDelay(10);
+    // Longer delay for WiFi task - no need to check so frequently
+    vTaskDelay(pdMS_TO_TICKS(100));
   }
 }
 
@@ -608,22 +617,21 @@ void applySensor(void *param){
         
         snprintf(rtcDateStr, sizeof(rtcDateStr), "%s %02d/%02d/%04d",
                 weekdays[currentDay], dt.day, dt.month, dt.year);
-        if (currentDay != lastDay) {
-          setCurrentDate(rtcDateStr);
-          if (!saveAlarm && !hiddenAlarm)
-          {
-            setPlayAlarm(true);
-          }
-          lastDay = currentDay;
-        }
+    if (currentDay != lastDay) {
+      setCurrentDate(rtcDateStr);
+      if (!saveAlarm && !hiddenAlarm)
+      {
+        setPlayAlarm(true);
       }
+      lastDay = currentDay;
     }
-
-    vTaskDelay(5);
   }
 }
 
-void controlAlarmTask(void *param) {
+    // Sensor readings don't need to be super fast
+    vTaskDelay(pdMS_TO_TICKS(50));
+  }
+}void controlAlarmTask(void *param) {
     bool isPlaying = false;
     
     ESP_LOGI(TAG, "Alarm task started, waiting for system ready...");

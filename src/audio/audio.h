@@ -11,7 +11,7 @@ class Memory;
 
 // Audio configuration constants
 #define AUDIO_SAMPLE_RATE 16000
-#define AUDIO_VOICE_VOLUME 90
+#define AUDIO_VOICE_VOLUME 80
 #define AUDIO_MIC_GAIN 3
 #define AUDIO_CHUNK_SIZE 2048
 #define AUDIO_TEST_TONE_FREQ 440  // Hz (A4 note)
