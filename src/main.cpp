@@ -22,6 +22,9 @@
 #include "audio/audio.h"
 #include "ui.h"
 #include "vars.h"
+#include "screens.h"
+
+// Include ui.h sudah punya loadScreen declaration di dalam extern "C"
 
 #include "pin_config.h"
 #include "ESP_I2S.h"
@@ -55,6 +58,11 @@ void applyWiFiMode(void *param);
 void applySensor(void *param);
 void controlAlarmTask(void *param);
 
+// Declare objects dari screens.h untuk akses screen
+extern "C" {
+  extern objects_t objects;
+}
+
 
 extern bool switchWiFiAP();
 extern bool switchWiFi();
@@ -72,21 +80,36 @@ extern bool getSaveAlarm();
 extern void setSaveAlarm(bool data);
 extern bool gethidenAlaram();
 extern const char *getStartTime();
+extern const char *getStartTime2();
+extern const char *getStartTime3();
 extern const char *getEndTime();
+extern const char *getEndTime2();
+extern const char *getEndTime3();
 extern void timeAlarm(int32_t *data, size_t len );
 extern void setScheduleTime(const char *startTime, const char *endTime);
 extern void fileAudio(const char **data, size_t len);
 extern bool playAlarm();
+extern bool playAlarm2();
+extern bool playAlarm3();
 extern int playAudio();
 extern const char *getFileAudioSelected();
 extern bool getSetAlarm();
 extern void setPlayAlarm(bool data);
+extern void setPlayAlarm2(bool data);
+extern void setPlayAlarm3(bool data);
 extern const char *getNama();
 extern int32_t getUsia();
 extern int32_t getBB();
 extern bool getCalculate();
 extern void setCalculate(bool data);
 extern void sethasilHitung(const char* hasil);
+extern bool getClosePopup();
+extern void setClosePopup(bool data);
+extern int32_t getIndexAlarm();
+extern int32_t getCairan();
+extern void setCairan(int data);
+extern void setCairanTotal(int data);
+extern int32_t getCairanTotal();
 
 int lastDay = -1;
 int currentDay = -1;
@@ -102,8 +125,8 @@ bool isWifiAP = false;
 bool isWifi = false;
 bool wifi = false;
 bool lastSaveDate = false;
-bool isAlarmActive = false;
-bool isAlarm = false;
+bool isAlarmActive[3] = {false, false, false};  // Array untuk status aktif 3 alarm
+bool isAlarm[3] = {false, false, false};  // Array untuk 3 alarm
 bool setAlarm = false;
 bool saveAlarm = false;
 bool hiddenAlarm = false;
@@ -111,8 +134,15 @@ bool isPlay = false;
 bool isCharging = false;
 bool lastCharging = false;
 int playTestAudio = 0;
+bool isClosePopup = false;
+bool lastAlarmActiveState[3] = {false, false, false};  // Array untuk state sebelumnya 3 alarm
+bool tempAlarmFlag = false;  // Temporary flag for audio system compatibility - true to allow playback
 String fileSelected;
 int total = 0;
+int indexAlarm = 0;
+int cairanTubuh = 0;
+int cairanTubuhTotal = 0;
+lv_obj_t *previousScreen = NULL;  // Track screen sebelum alarm
 
 unsigned long alarmUntil = 0;
 String HH_MM = "21:00";
@@ -186,7 +216,46 @@ int parseHHMM(const char *t)
     return h * 60 + m;
 }
 
+// Forward declarations
+bool isWithinSchedule(const char *startHHMM, const char *endHHMM);
+
 int current = 0;
+
+// Helper function to save schedule by index
+bool saveScheduleByIndex(int index, const char *startTime, const char *endTime) {
+    if (!startTime || !endTime || strlen(startTime) != 5 || strlen(endTime) != 5) {
+        ESP_LOGE(TAG_STORAGE, "Invalid time format - Index: %d, Start: %s, End: %s", 
+                 index, startTime ? startTime : "NULL", endTime ? endTime : "NULL");
+        return false;
+    }
+    
+    if (STORAGE.saveSchedule(startTime, endTime, index)) {
+        ESP_LOGI(TAG_STORAGE, "Schedule%d saved: %s - %s", index, startTime, endTime);
+        return true;
+    } else {
+        ESP_LOGE(TAG_STORAGE, "Failed to save schedule%d", index);
+        return false;
+    }
+}
+
+// Helper function to check if any alarm should be active
+bool isAnyAlarmActive() {
+    // Get all schedule times
+    const char* schedules[3][2] = {
+        {STORAGE.getStartTime(), STORAGE.getEndTime()},
+        {STORAGE.getStartTime2(), STORAGE.getEndTime2()},
+        {STORAGE.getStartTime3(), STORAGE.getEndTime3()}
+    };
+    
+    // Check each schedule with corresponding alarm
+    for (int i = 0; i < 3; i++) {
+        if (isWithinSchedule(schedules[i][0], schedules[i][1]) && isAlarm[i]) {
+            return true;
+        }
+    }
+    return false;
+}
+
 bool isWithinSchedule(const char *startHHMM, const char *endHHMM)
 {
     int start = parseHHMM(startHHMM);
@@ -298,6 +367,59 @@ void loop() {
   
   // Handle auto-sleep untuk brightness management
   handleAutoSleep();
+
+  // Handle close popup - kembalikan ke screen sebelumnya
+  if (isClosePopup) {
+      // Check if any alarm was previously active
+      bool wasAnyAlarmActive = false;
+      bool wasAnyAlarmActive2 = false;
+      bool wasAnyAlarmActive3 = false;
+      for (int i = 0; i < 3; i++) {
+          if (lastAlarmActiveState[i]) {
+            if(i==0)
+            {
+              wasAnyAlarmActive = true;
+            }
+            else if(i==1)
+            {
+              wasAnyAlarmActive2 = true;
+            }
+            else if(i==2)
+            {
+              wasAnyAlarmActive3 = true;
+            }
+            lastAlarmActiveState[i] = false; // Reset state
+          }
+      }
+      
+      if (wasAnyAlarmActive && previousScreen != NULL) {
+          // Kembalikan ke screen sebelum alarm
+          lv_scr_load_anim(previousScreen, LV_SCR_LOAD_ANIM_FADE_ON, 200, 0, false);
+          ESP_LOGI(TAG, "Returning to previous screen");
+          setPlayAlarm(false);
+          tempAlarmFlag = false;
+          previousScreen = NULL;
+      }
+      else if (wasAnyAlarmActive2 && previousScreen != NULL) {
+          // Kembalikan ke screen sebelum alarm
+          lv_scr_load_anim(previousScreen, LV_SCR_LOAD_ANIM_FADE_ON, 200, 0, false);
+          ESP_LOGI(TAG, "Returning to previous screen");
+          setPlayAlarm2(false);
+          tempAlarmFlag = false;
+          previousScreen = NULL;
+      }
+      else if (wasAnyAlarmActive3 && previousScreen != NULL) {
+          // Kembalikan ke screen sebelum alarm
+          lv_scr_load_anim(previousScreen, LV_SCR_LOAD_ANIM_FADE_ON, 200, 0, false);
+          ESP_LOGI(TAG, "Returning to previous screen");
+          setPlayAlarm3(false);
+          tempAlarmFlag = false;
+          previousScreen = NULL;
+      }
+      setCairanTotal(cairanTubuh + cairanTubuhTotal);
+      
+      setClosePopup(false);
+  }
   
   // Give more time for other tasks to execute
   // 10ms delay ensures LVGL gets ~100 updates per second which is plenty
@@ -435,18 +557,30 @@ void applySensor(void *param){
     
     // // Handle auto-sleep untuk brightness management
     // handleAutoSleep();
-
+    isClosePopup = getClosePopup();
     isWifiAP = switchWiFiAP();
     isWifi = switchWiFi();
-    isAlarm = playAlarm();
+    
+    // Read all alarms efficiently
+    isAlarm[0] = playAlarm();
+    isAlarm[1] = playAlarm2();
+    isAlarm[2] = playAlarm3();
+    
     playTestAudio = playAudio();
     saveAlarm  = getSaveAlarm();
     hiddenAlarm = gethidenAlaram();
     setAlarm = getSetAlarm();
+    indexAlarm = getIndexAlarm();
+    cairanTubuh = getCairan();
+    cairanTubuhTotal = getCairanTotal();
     const char *nama = getNama();
     int32_t bb = getBB();
     const char *startTime = getStartTime();
     const char *endTime = getEndTime();
+    const char *startTime2 = getStartTime2();
+    const char *endTime2 = getEndTime2();
+    const char *startTime3 = getStartTime3();
+    const char *endTime3 = getEndTime3();
     fileSelected = getFileAudioSelected();
     
     static unsigned long lastJsonUpdate = 0;
@@ -537,33 +671,72 @@ void applySensor(void *param){
       sethasilHitung(hasil.c_str());
     }
 
-    if (saveAlarm && !isAlarm) {
-      if (startTime == NULL || endTime == NULL) {
-        ESP_LOGE(TAG_STORAGE, "Invalid schedule time (NULL pointer)");
-        saveAlarm = false;
-        setSaveAlarm(saveAlarm);
-      } else if (strlen(startTime) != 5 || strlen(endTime) != 5) {
-        ESP_LOGE(TAG_STORAGE, "Invalid time format - Start: %s, End: %s", startTime, endTime);
+    if (saveAlarm && indexAlarm >= 1 && indexAlarm <= 3) {
+      // Get appropriate time variables based on alarm index
+      const char* start = nullptr;
+      const char* end = nullptr;
+      
+      switch (indexAlarm) {
+        case 1: start = startTime; end = endTime; break;
+        case 2: start = startTime2; end = endTime2; break;  
+        case 3: start = startTime3; end = endTime3; break;
+      }
+      
+      // Use unified save function with validation
+      if (saveScheduleByIndex(indexAlarm, start, end)) {
         saveAlarm = false;
         setSaveAlarm(saveAlarm);
       } else {
-        if (STORAGE.saveSchedule(startTime, endTime)) {
-          ESP_LOGI(TAG_STORAGE, "Schedule saved: %s - %s", startTime, endTime);
-          saveAlarm = false;
-          setSaveAlarm(saveAlarm);
-        } else {
-          ESP_LOGE(TAG_STORAGE, "Failed to save schedule");
-          saveAlarm = false;
-          setSaveAlarm(saveAlarm);
-        }
+        saveAlarm = false;
+        setSaveAlarm(saveAlarm);
       }
     } else {
-      if (isWithinSchedule(STORAGE.getStartTime(), STORAGE.getEndTime()) && isAlarm) {
-        isAlarmActive = true;
+      // Check if any alarm should be active using helper function
+      bool anyAlarmShouldBeActive = isAnyAlarmActive();
+      
+      if (anyAlarmShouldBeActive) {
+        // setCairan(0);
+        // Find which alarm is active and update corresponding state
+        for (int i = 0; i < 3; i++) {
+          bool shouldBeActive = false;
+          
+          // Check schedule for each alarm
+          if (i == 0) {
+            shouldBeActive = isWithinSchedule(STORAGE.getStartTime(), STORAGE.getEndTime()) && isAlarm[i];
+          }
+          else if (i == 1){
+            shouldBeActive = isWithinSchedule(STORAGE.getStartTime2(), STORAGE.getEndTime2()) && isAlarm[i];
+          }
+          else if (i == 2){
+            shouldBeActive = isWithinSchedule(STORAGE.getStartTime3(), STORAGE.getEndTime3()) && isAlarm[i];
+          } 
+          
+          // Deteksi perubahan state dan buka screen data cairan masuk
+          if (shouldBeActive && !isClosePopup && !lastAlarmActiveState[i]) {
+            ESP_LOGI(TAG_SENSOR, "Alarm %d activated - Opening data cairan masuk screen", i+1);
+            
+            // Simpan screen sebelumnya hanya jika belum disimpan
+            if (previousScreen == NULL) {
+              previousScreen = lv_scr_act();
+            }
+            
+            lv_textarea_set_text(objects.jumlah_cairan, "0");
+            // lv_label_set_text(objects.jumlah_cairan, "0");
+            // Switch ke screen data cairan masuk dengan animasi
+            lv_scr_load_anim(objects.data_cairan_masuk, LV_SCR_LOAD_ANIM_FADE_ON, 200, 0, false);
+            lastAlarmActiveState[i] = true;
+          }
+          
+          isAlarmActive[i] = shouldBeActive;
+        }
       } else {
-        isAlarmActive = false;
+        // Reset all alarm active states
+        for (int i = 0; i < 3; i++) {
+          isAlarmActive[i] = false;
+        }
       }
     }
+
 
     if (isNtp) {
       isLastNtp = isNtp;
@@ -631,7 +804,9 @@ void applySensor(void *param){
     // Sensor readings don't need to be super fast
     vTaskDelay(pdMS_TO_TICKS(50));
   }
-}void controlAlarmTask(void *param) {
+}
+
+void controlAlarmTask(void *param) {
     bool isPlaying = false;
     
     ESP_LOGI(TAG, "Alarm task started, waiting for system ready...");
@@ -651,13 +826,19 @@ void applySensor(void *param){
           lastCharging = isCharging;
           audioSystem->generateTestTone();
         }
-        
 
-        if (isAlarmActive) {
-            isAlarmActive = false; 
-            if (!isPlaying) {
-                alarmUntil = millis() + 6000UL;
+        // Check if any alarm is active and start audio playback
+        bool anyAlarmActive = false;
+        for (int i = 0; i < 3; i++) {
+            if (isAlarmActive[i]) {
+                anyAlarmActive = true;
+                isAlarmActive[i] = false; // Reset after processing
             }
+        }
+        
+        if (anyAlarmActive && !isPlaying) {
+            alarmUntil = millis() + 6000UL;
+            tempAlarmFlag = true;  // Temporary flag for audio system compatibility - true to allow playback
         }
 
         bool shouldBePlaying = (long)(millis() - alarmUntil) < 0;
@@ -686,18 +867,22 @@ void applySensor(void *param){
             
             String selectedFile = webServer->getFileSelected();
             bool playedSuccessfully = false;
-            
+           
+
             if (selectedFile != "") {
-                static String wavFilePath;
-                wavFilePath = "/" + selectedFile;
-                playedSuccessfully = audioSystem->playWavFile(wavFilePath.c_str(), &isAlarm);
+              static String wavFilePath;
+              wavFilePath = "/" + selectedFile;
+              playedSuccessfully = audioSystem->playWavFile(wavFilePath.c_str(), &tempAlarmFlag);
             }
-            
+
             // Fallback to default audio if no file selected or playback failed
             if (!playedSuccessfully) {
-                audioSystem->playDefaultAudio(canon_pcm, canon_pcm_len, &isAlarm);
+              audioSystem->playDefaultAudio(canon_pcm, canon_pcm_len, &tempAlarmFlag);
             }
-            
+
+            // Ensure playback flag is cleared after playback finishes
+            tempAlarmFlag = false;
+
             isPlaying = false;
             alarmUntil = 0;
         }

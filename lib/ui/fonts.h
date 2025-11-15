@@ -16,6 +16,7 @@ extern const lv_font_t ui_font_saira_24;
 extern const lv_font_t ui_font_saira_24_medium;
 extern const lv_font_t ui_font_saira_36;
 extern const lv_font_t ui_font_amatic_bold;
+extern const lv_font_t ui_font_saira20;
 
 
 #ifdef __cplusplus

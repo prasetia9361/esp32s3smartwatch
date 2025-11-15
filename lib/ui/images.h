@@ -27,6 +27,8 @@ extern const lv_img_dsc_t img_nama;
 extern const lv_img_dsc_t img_usia;
 extern const lv_img_dsc_t img_berat_badan;
 extern const lv_img_dsc_t img_bg2;
+extern const lv_img_dsc_t img_total_fluids;
+extern const lv_img_dsc_t img_icon_fluids;
 
 #ifndef EXT_IMG_DESC_T
 #define EXT_IMG_DESC_T
@@ -36,7 +38,7 @@ typedef struct _ext_img_desc_t {
 } ext_img_desc_t;
 #endif
 
-extern const ext_img_desc_t images[20];
+extern const ext_img_desc_t images[22];
 
 
 #ifdef __cplusplus

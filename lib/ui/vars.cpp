@@ -129,8 +129,66 @@ const char *getStartTime(){
   return cachedStartTime;
 }
 
+const char *getStartTime2(){
+  const char *time = flow::getGlobalVariable(FLOW_GLOBAL_VARIABLE_START_TIME2).getString();
+
+  
+  // Validasi format HH:MM
+  if (time && strlen(time) == 5 && time[2] == ':') {
+    // Update cache
+    strncpy(cachedStartTime, time, 5);
+    cachedStartTime[5] = '\0';
+    return time;
+  }
+  
+  return cachedStartTime;
+}
+
+const char *getStartTime3(){
+  const char *time = flow::getGlobalVariable(FLOW_GLOBAL_VARIABLE_START_TIME3).getString();
+
+  
+  // Validasi format HH:MM
+  if (time && strlen(time) == 5 && time[2] == ':') {
+    // Update cache
+    strncpy(cachedStartTime, time, 5);
+    cachedStartTime[5] = '\0';
+    return time;
+  }
+  
+  return cachedStartTime;
+}
+
 const char *getEndTime(){
   const char *time = flow::getGlobalVariable(FLOW_GLOBAL_VARIABLE_END_TIME).getString();
+
+  // Validasi format HH:MM
+  if (time && strlen(time) == 5 && time[2] == ':') {
+    // Update cache
+    strncpy(cachedEndTime, time, 5);
+    cachedEndTime[5] = '\0';
+    return time;
+  }
+  
+  return cachedEndTime;
+}
+
+const char *getEndTime2(){
+  const char *time = flow::getGlobalVariable(FLOW_GLOBAL_VARIABLE_END_TIME2).getString();
+
+  // Validasi format HH:MM
+  if (time && strlen(time) == 5 && time[2] == ':') {
+    // Update cache
+    strncpy(cachedEndTime, time, 5);
+    cachedEndTime[5] = '\0';
+    return time;
+  }
+  
+  return cachedEndTime;
+}
+
+const char *getEndTime3(){
+  const char *time = flow::getGlobalVariable(FLOW_GLOBAL_VARIABLE_END_TIME3).getString();
 
   // Validasi format HH:MM
   if (time && strlen(time) == 5 && time[2] == ':') {
@@ -249,6 +307,22 @@ void setPlayAlarm(bool data){
   flow::setGlobalVariable(FLOW_GLOBAL_VARIABLE_PLAY_ALARM, data);
 }
 
+bool playAlarm2(){
+  return flow::getGlobalVariable(FLOW_GLOBAL_VARIABLE_PLAY_ALARM2).getBoolean();
+}
+
+void setPlayAlarm2(bool data){
+  flow::setGlobalVariable(FLOW_GLOBAL_VARIABLE_PLAY_ALARM2, data);
+}
+
+bool playAlarm3(){
+  return flow::getGlobalVariable(FLOW_GLOBAL_VARIABLE_PLAY_ALARM3).getBoolean();
+}
+
+void setPlayAlarm3(bool data){
+  flow::setGlobalVariable(FLOW_GLOBAL_VARIABLE_PLAY_ALARM3, data);
+}
+
 int playAudio(){
   return flow::getGlobalVariable(FLOW_GLOBAL_VARIABLE_PLAY_AUDIO).getInt();
 }
@@ -285,4 +359,30 @@ void sethasilHitung(const char* hasil){
   flow::setGlobalVariable(FLOW_GLOBAL_VARIABLE_HASIL_HITUNG, hasil);
 }
 
+bool getClosePopup(){
+  return flow::getGlobalVariable(FLOW_GLOBAL_VARIABLE_CLOSE_POPUP).getBoolean();
+}
 
+void setClosePopup(bool data){
+  flow::setGlobalVariable(FLOW_GLOBAL_VARIABLE_CLOSE_POPUP, data);
+}
+
+int32_t getIndexAlarm(){
+  return flow::getGlobalVariable(FLOW_GLOBAL_VARIABLE_ALARMKE).getInt32();
+}
+
+int32_t getCairan(){
+  return flow::getGlobalVariable(FLOW_GLOBAL_VARIABLE_CAIRAN).getInt32();
+}
+
+void setCairan(int data){
+  flow::setGlobalVariable(FLOW_GLOBAL_VARIABLE_CAIRAN, data);
+}
+
+int32_t getCairanTotal(){
+  return flow::getGlobalVariable(FLOW_GLOBAL_VARIABLE_CAIRAN_TOTAL).getInt32();
+}
+
+void setCairanTotal(int data){
+  flow::setGlobalVariable(FLOW_GLOBAL_VARIABLE_CAIRAN_TOTAL, data);
+}
