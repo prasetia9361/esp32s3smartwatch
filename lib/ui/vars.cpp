@@ -113,6 +113,14 @@ bool gethidenAlaram(){
   return flow::getGlobalVariable(FLOW_GLOBAL_VARIABLE_HIDDERALARM).getBoolean();
 }
 
+bool getHiddenAlarm2(){
+  return flow::getGlobalVariable(FLOW_GLOBAL_VARIABLE_HIDDENALARM2).getBoolean();
+}
+
+bool getHiddenAlarm3(){
+  return flow::getGlobalVariable(FLOW_GLOBAL_VARIABLE_HIDDENALARM3).getBoolean();
+}
+
 
 const char *getStartTime(){
   const char *time = flow::getGlobalVariable(FLOW_GLOBAL_VARIABLE_START_TIME).getString();
@@ -303,8 +311,17 @@ bool playAlarm(){
   return flow::getGlobalVariable(FLOW_GLOBAL_VARIABLE_PLAY_ALARM).getBoolean();
 }
 
-void setPlayAlarm(bool data){
-  flow::setGlobalVariable(FLOW_GLOBAL_VARIABLE_PLAY_ALARM, data);
+void setPlayAlarm(bool data, int index){
+  if (index == 0)
+  {
+    flow::setGlobalVariable(FLOW_GLOBAL_VARIABLE_PLAY_ALARM, data);
+  }else if (index == 1)
+  {
+    flow::setGlobalVariable(FLOW_GLOBAL_VARIABLE_PLAY_ALARM2, data);
+  }else if (index == 2)
+  {
+    flow::setGlobalVariable(FLOW_GLOBAL_VARIABLE_PLAY_ALARM3, data);
+  }
 }
 
 bool playAlarm2(){
@@ -385,4 +402,52 @@ int32_t getCairanTotal(){
 
 void setCairanTotal(int data){
   flow::setGlobalVariable(FLOW_GLOBAL_VARIABLE_CAIRAN_TOTAL, data);
+}
+
+const char *getSsidSTA(){
+  return flow::getGlobalVariable(FLOW_GLOBAL_VARIABLE_SSID_STA).getString();
+}
+
+const char *getPassSTA(){
+  return flow::getGlobalVariable(FLOW_GLOBAL_VARIABLE_PASSS_STA).getString();
+}
+
+const char *getSsidAP(){
+  return flow::getGlobalVariable(FLOW_GLOBAL_VARIABLE_SSID_AP).getString();
+}
+
+const char *getPassAP(){
+  return flow::getGlobalVariable(FLOW_GLOBAL_VARIABLE_PASS_AP).getString();
+}
+
+void setSsidSTA(const char* ssid){
+  flow::setGlobalVariable(FLOW_GLOBAL_VARIABLE_SSID_STA, ssid);
+}
+
+void setPassSTA(const char* pass){
+  flow::setGlobalVariable(FLOW_GLOBAL_VARIABLE_PASSS_STA, pass);
+}
+
+void setSsidAP(const char* ssid){
+  flow::setGlobalVariable(FLOW_GLOBAL_VARIABLE_SSID_AP, ssid);
+}
+
+void setPassAP(const char* pass){
+  flow::setGlobalVariable(FLOW_GLOBAL_VARIABLE_PASS_AP, pass);
+}
+
+bool getSaveWifiSTA(){
+  return flow::getGlobalVariable(FLOW_GLOBAL_VARIABLE_SAVE_WIFI_STA).getBoolean();
+}
+
+void setSavewifiSTA(bool data){
+  flow::setGlobalVariable(FLOW_GLOBAL_VARIABLE_SAVE_WIFI_STA, data);
+}
+
+void setSavewifiAP(bool data){
+  flow::setGlobalVariable(FLOW_GLOBAL_VARIABLE_SAVE_WIFI_AP, data);
+}
+
+bool getSaveWifiAP(){
+  return flow::getGlobalVariable(FLOW_GLOBAL_VARIABLE_SAVE_WIFI_AP).getBoolean();
 }

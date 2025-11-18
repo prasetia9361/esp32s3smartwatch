@@ -31,6 +31,8 @@ bool Storage::loadConfig() {
         JsonDocument docConfig;
         docConfig["wifiAp"] = SSDID_AP;
         docConfig["wifiPassword"] = SSDID_AP_PASSWORD;
+        docConfig["SSIDSTA"] = WIFI_SSID;
+        docConfig["PassSTA"] = WIFI_PASSWORD;
         docConfig["setFile"] = "";
         docConfig["start"] = "07:00";
         docConfig["end"] = "07:45";
@@ -50,6 +52,8 @@ bool Storage::loadConfig() {
 
         strlcpy(config.wifiAp, SSDID_AP, sizeof(config.wifiAp));
         strlcpy(config.wifiPassword, SSDID_AP_PASSWORD, sizeof(config.wifiPassword));
+        strlcpy(config.ssidSTA, WIFI_SSID, sizeof(config.ssidSTA));
+        strlcpy(config.passSTA, WIFI_PASSWORD, sizeof(config.passSTA));
         strlcpy(config.setFile, "", sizeof(config.setFile));
         strlcpy(config.startTime, "07:00", sizeof(config.startTime));
         strlcpy(config.endTime, "07:45", sizeof(config.endTime));
@@ -79,6 +83,8 @@ bool Storage::loadConfig() {
 
     strlcpy(config.wifiAp, docConfig["wifiAp"] | SSDID_AP, sizeof(config.wifiAp));
     strlcpy(config.wifiPassword, docConfig["wifiPassword"] | SSDID_AP_PASSWORD, sizeof(config.wifiPassword));
+    strlcpy(config.ssidSTA, docConfig["SSIDSTA"] | WIFI_SSID, sizeof(config.ssidSTA));
+    strlcpy(config.passSTA, docConfig["PassSTA"] | WIFI_PASSWORD, sizeof(config.passSTA));
     strlcpy(config.setFile, docConfig["setFile"] | "", sizeof(config.setFile));
     strlcpy(config.startTime, docConfig["start"] | "21:00", sizeof(config.startTime));
     strlcpy(config.endTime, docConfig["end"] | "00:45", sizeof(config.endTime));
@@ -104,15 +110,8 @@ bool Storage::saveWifi(const char *wifiAP, const char *password)
     // Update WiFi credentials only
     docConfig["wifiAp"] = wifiAP;
     docConfig["wifiPassword"] = password;
-    docConfig["setFile"] = config.setFile;
     
-    // Preserve all schedule data
-    docConfig["start"] = config.startTime;
-    docConfig["end"] = config.endTime;
-    docConfig["start2"] = config.startTime2;
-    docConfig["end2"] = config.endTime2;
-    docConfig["start3"] = config.startTime3;
-    docConfig["end3"] = config.endTime3;
+    // Preserve all schedule dat
 
     File writeFile = SPIFFS.open("/config.json", FILE_WRITE);
     if (!writeFile) {
@@ -132,6 +131,43 @@ bool Storage::saveWifi(const char *wifiAP, const char *password)
 
     writeFile.close();
     ESP_LOGI(TAG_STORAGE, "WiFi config saved: %s", wifiAP);
+    return true;
+}
+
+bool Storage::saveWifiSTA(const char *wifiSTA, const char *password)
+{
+    // Read current config to preserve all schedule data
+    File readFile = SPIFFS.open("/config.json", FILE_READ);
+    JsonDocument docConfig;
+    if (readFile) {
+        deserializeJson(docConfig, readFile);
+        readFile.close();
+    }
+
+    // Update WiFi STA credentials only
+    docConfig["SSIDSTA"] = wifiSTA;
+    docConfig["PassSTA"] = password;
+    
+    // Preserve all schedule data
+
+    File writeFile = SPIFFS.open("/config.json", FILE_WRITE);
+    if (!writeFile) {
+        ESP_LOGE(TAG_STORAGE, "Failed to open config.json for writing");
+        return false;
+    }
+
+    if (serializeJson(docConfig, writeFile) == 0) {
+        ESP_LOGE(TAG_STORAGE, "JSON serialization failed");
+        writeFile.close();
+        return false;
+    }
+
+    // Update internal config
+    strlcpy(config.ssidSTA, wifiSTA, sizeof(config.ssidSTA));
+    strlcpy(config.passSTA, password, sizeof(config.passSTA));
+
+    writeFile.close();
+    ESP_LOGI(TAG_STORAGE, "WiFi STA config saved: %s", wifiSTA);
     return true;
 }
 
@@ -177,11 +213,6 @@ bool Storage::saveSchedule(const char *start, const char *end, int scheduleIndex
         deserializeJson(docConfig, readFile);
         readFile.close();
     }
-
-    // Set common fields (preserve existing values)
-    docConfig["wifiAp"] = config.wifiAp;
-    docConfig["wifiPassword"] = config.wifiPassword; 
-    docConfig["setFile"] = config.setFile;
     
     // Set schedule-specific fields based on index
     String startKey, endKey;

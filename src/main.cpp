@@ -37,6 +37,7 @@ static const char *TAG_STORAGE = "Storage";
 static const char *TAG_SENSOR = "Sensor";
 
 SemaphoreHandle_t i2c_mutex = NULL;
+SemaphoreHandle_t alarm_mutex = NULL;  // Mutex untuk melindungi alarm state antar task
 
 
 HWCDC USBSerial;
@@ -79,6 +80,8 @@ extern int isStep();
 extern bool getSaveAlarm();
 extern void setSaveAlarm(bool data);
 extern bool gethidenAlaram();
+extern bool getHiddenAlarm2();
+extern bool getHiddenAlarm3();
 extern const char *getStartTime();
 extern const char *getStartTime2();
 extern const char *getStartTime3();
@@ -94,7 +97,7 @@ extern bool playAlarm3();
 extern int playAudio();
 extern const char *getFileAudioSelected();
 extern bool getSetAlarm();
-extern void setPlayAlarm(bool data);
+extern void setPlayAlarm(bool data, int index);
 extern void setPlayAlarm2(bool data);
 extern void setPlayAlarm3(bool data);
 extern const char *getNama();
@@ -110,6 +113,18 @@ extern int32_t getCairan();
 extern void setCairan(int data);
 extern void setCairanTotal(int data);
 extern int32_t getCairanTotal();
+extern const char *getSsidSTA();
+extern const char *getPassSTA();
+extern const char *getSsidAP();
+extern const char *getPassAP();
+extern void setSsidSTA(const char* ssid);
+extern void setPassSTA(const char* pass);
+extern void setSsidAP(const char* ssid);
+extern void setPassAP(const char* pass);
+extern bool getSaveWifiSTA();
+extern bool getSaveWifiAP();
+extern void setSavewifiAP(bool data);
+extern void setSavewifiSTA(bool data);
 
 int lastDay = -1;
 int currentDay = -1;
@@ -125,29 +140,41 @@ bool isWifiAP = false;
 bool isWifi = false;
 bool wifi = false;
 bool lastSaveDate = false;
-bool isAlarmActive[3] = {false, false, false};  // Array untuk status aktif 3 alarm
+// Alarm state management dengan thread safety
+volatile bool isAlarmActive = false;  // Volatile untuk shared variable antar task
 bool isAlarm[3] = {false, false, false};  // Array untuk 3 alarm
 bool setAlarm = false;
 bool saveAlarm = false;
-bool hiddenAlarm = false;
+bool hiddenAlarm[3] = {false, false, false}; 
+bool hiddenAlarm2 = false;
+bool hiddenAlarm3 = false;
 bool isPlay = false;
 bool isCharging = false;
 bool lastCharging = false;
 int playTestAudio = 0;
 bool isClosePopup = false;
-bool lastAlarmActiveState[3] = {false, false, false};  // Array untuk state sebelumnya 3 alarm
+volatile bool lastAlarmActiveState = false;  // Volatile untuk shared variable
+volatile bool alarmTriggered = false;  // Flag untuk sinkronisasi popup dengan audio
 bool tempAlarmFlag = false;  // Temporary flag for audio system compatibility - true to allow playback
 String fileSelected;
 int total = 0;
 int indexAlarm = 0;
+volatile int indexActive = -1;  // -1 = tidak ada, 0-2 = alarm 1-3, 3 = cairan fisik
 int cairanTubuh = 0;
 int cairanTubuhTotal = 0;
+int firstcairanTotal = 0;
+int hidrasi = 0;
+float cairanKeluarFisik = 0;
+float currentCairanKeluar = 0;
+int lastStepCount = 0;  // Track previous step count untuk deteksi perubahan
+float cairanTubuhTotalFloat = 0.0;  // Float precision untuk kalkulasi 0.28ml per step
 lv_obj_t *previousScreen = NULL;  // Track screen sebelum alarm
 
 unsigned long alarmUntil = 0;
 String HH_MM = "21:00";
 String CURRENT_DATE = "TUE 18/10/2025";
 String jsonData = "[]";
+
 
 bool initializeHardware(){
   bool isSDCard = memory->begin(SDMMC_CLK, SDMMC_CMD, SDMMC_DATA);
@@ -239,7 +266,8 @@ bool saveScheduleByIndex(int index, const char *startTime, const char *endTime) 
 }
 
 // Helper function to check if any alarm should be active
-bool isAnyAlarmActive() {
+// Returns: index alarm yang aktif (0-2 untuk alarm 1-3, 3 untuk cairan fisik, -1 untuk tidak ada)
+int checkActiveAlarm() {
     // Get all schedule times
     const char* schedules[3][2] = {
         {STORAGE.getStartTime(), STORAGE.getEndTime()},
@@ -247,13 +275,28 @@ bool isAnyAlarmActive() {
         {STORAGE.getStartTime3(), STORAGE.getEndTime3()}
     };
     
-    // Check each schedule with corresponding alarm
+    // Check each schedule with corresponding alarm (prioritas berdasarkan urutan)
     for (int i = 0; i < 3; i++) {
-        if (isWithinSchedule(schedules[i][0], schedules[i][1]) && isAlarm[i]) {
-            return true;
+        // Auto-enable alarm jika di luar schedule
+        if (!isWithinSchedule(schedules[i][0], schedules[i][1]) && !hiddenAlarm[i]) {
+            setPlayAlarm(true, i);
+        }
+        
+        // Check jika alarm aktif dan dalam schedule
+        if (isWithinSchedule(schedules[i][0], schedules[i][1]) && isAlarm[i] && !hiddenAlarm[i]) {
+            ESP_LOGI(TAG_SENSOR, "Alarm %d is active within schedule", i+1);
+            return i;  // Return index alarm yang aktif
         }
     }
-    return false;
+    
+    // Check cairan keluar fisik (prioritas paling rendah)
+    if (cairanKeluarFisik > 0.0f && currentCairanKeluar >= cairanKeluarFisik) {
+        ESP_LOGI(TAG_SENSOR, "Cairan fisik threshold reached: %.2f >= %.2f", 
+                 currentCairanKeluar, cairanKeluarFisik);
+        return 3;  // Return 3 untuk cairan fisik
+    }
+    
+    return -1;  // Tidak ada alarm aktif
 }
 
 bool isWithinSchedule(const char *startHHMM, const char *endHHMM)
@@ -313,6 +356,13 @@ void setup() {
     ESP_LOGE(TAG, "Failed to create I2C mutex!");
     while(1) delay(100);
   }
+  
+  alarm_mutex = xSemaphoreCreateMutex();
+  if (alarm_mutex == NULL) {
+    ESP_LOGE(TAG, "Failed to create alarm mutex!");
+    while(1) delay(100);
+  }
+  ESP_LOGI(TAG, "Mutexes created successfully");
 
   while (!initializeHardware()) {
     ESP_LOGE(TAG, "Retrying hardware initialization...");
@@ -369,55 +419,44 @@ void loop() {
   handleAutoSleep();
 
   // Handle close popup - kembalikan ke screen sebelumnya
+  // User harus bisa close popup kapan saja, tidak peduli alarm state
   if (isClosePopup) {
-      // Check if any alarm was previously active
-      bool wasAnyAlarmActive = false;
-      bool wasAnyAlarmActive2 = false;
-      bool wasAnyAlarmActive3 = false;
-      for (int i = 0; i < 3; i++) {
-          if (lastAlarmActiveState[i]) {
-            if(i==0)
-            {
-              wasAnyAlarmActive = true;
-            }
-            else if(i==1)
-            {
-              wasAnyAlarmActive2 = true;
-            }
-            else if(i==2)
-            {
-              wasAnyAlarmActive3 = true;
-            }
-            lastAlarmActiveState[i] = false; // Reset state
+    if (previousScreen != NULL) {
+          cairanTubuhTotalFloat = (float)(cairanTubuh + cairanTubuhTotal);
+          currentCairanKeluar -= cairanTubuh;
+          if (currentCairanKeluar < 0.0)
+          {
+            currentCairanKeluar = 0.0;
           }
-      }
-      
-      if (wasAnyAlarmActive && previousScreen != NULL) {
-          // Kembalikan ke screen sebelum alarm
+          
+          setCairanTotal((int)cairanTubuhTotalFloat);
+          
+          // Reset alarm state dengan thread safety SEBELUM screen transition
+          if (alarm_mutex != NULL && xSemaphoreTake(alarm_mutex, pdMS_TO_TICKS(100)) == pdTRUE) {
+            if (indexActive >= 0 && indexActive < 3) {
+              ESP_LOGI(TAG, "Closing popup from alarm %d", indexActive+1);
+              setPlayAlarm(false, indexActive);
+            } else if (indexActive == 3) {
+              ESP_LOGI(TAG, "Closing popup from cairan fisik alarm");
+            } else {
+              ESP_LOGI(TAG, "Closing popup");
+            }
+            
+            // Reset semua flag termasuk isAlarmActive untuk stop audio
+            tempAlarmFlag = false;
+            lastAlarmActiveState = false;
+            alarmTriggered = false;
+            isAlarmActive = false;  // PENTING: Reset isAlarmActive untuk stop audio loop
+            indexActive = -1;
+            xSemaphoreGive(alarm_mutex);
+          }
+          
+          // Kembalikan ke screen sebelum alarm SETELAH state reset
           lv_scr_load_anim(previousScreen, LV_SCR_LOAD_ANIM_FADE_ON, 200, 0, false);
-          ESP_LOGI(TAG, "Returning to previous screen");
-          setPlayAlarm(false);
-          tempAlarmFlag = false;
+          ESP_LOGI(TAG, "Screen transition back to previous screen");
+          
           previousScreen = NULL;
       }
-      else if (wasAnyAlarmActive2 && previousScreen != NULL) {
-          // Kembalikan ke screen sebelum alarm
-          lv_scr_load_anim(previousScreen, LV_SCR_LOAD_ANIM_FADE_ON, 200, 0, false);
-          ESP_LOGI(TAG, "Returning to previous screen");
-          setPlayAlarm2(false);
-          tempAlarmFlag = false;
-          previousScreen = NULL;
-      }
-      else if (wasAnyAlarmActive3 && previousScreen != NULL) {
-          // Kembalikan ke screen sebelum alarm
-          lv_scr_load_anim(previousScreen, LV_SCR_LOAD_ANIM_FADE_ON, 200, 0, false);
-          ESP_LOGI(TAG, "Returning to previous screen");
-          setPlayAlarm3(false);
-          tempAlarmFlag = false;
-          previousScreen = NULL;
-      }
-      setCairanTotal(cairanTubuh + cairanTubuhTotal);
-      
       setClosePopup(false);
   }
   
@@ -435,7 +474,7 @@ void applyWiFiMode(void *param){
 
       if (wifiAP){
         wifiSetup->connectAP();
-        wifiSetup->setupWiFiAP();
+        wifiSetup->setupWiFiAP(STORAGE.getWifiAp(), STORAGE.getWifiPassword());
         webServer->begin();
         ESP_LOGI(TAG, "WiFi AP mode enabled");
       } else {
@@ -453,7 +492,7 @@ void applyWiFiMode(void *param){
 
       if (wifi) {
         wifiSetup->connectSTA();
-        wifiSetup->setupWiFiSTA(WIFI_SSID, WIFI_PASSWORD);
+        wifiSetup->setupWiFiSTA(STORAGE.getSsidSTA(), STORAGE.getPassSTA());
         if (wifiSetup->isConnected()) {
             ntpSetup.setUpdateInterval(NTP_UPDATE_INTERVAL);
             ntpSetup.initialize();
@@ -493,6 +532,10 @@ void applySensor(void *param){
     ESP_LOGI(TAG_STORAGE, "Loading saved schedule...");
     const char *savedStart = STORAGE.getStartTime();
     const char *savedEnd = STORAGE.getEndTime();
+    setSsidSTA(STORAGE.getSsidSTA());
+    setPassSTA(STORAGE.getPassSTA());
+    setSsidAP(STORAGE.getWifiAp());
+    setPassAP(STORAGE.getWifiPassword());
     setScheduleTime(savedStart, savedEnd);
     ESP_LOGI(TAG_STORAGE, "Schedule loaded: %s - %s", savedStart, savedEnd);
   }
@@ -549,7 +592,16 @@ void applySensor(void *param){
   }
   
   ESP_LOGI(TAG_SENSOR, "All sensors initialized");
+  
+  // Initialize step tracking variables
+  lastStepCount = stepCounter->getStepCount();
+  cairanTubuhTotalFloat = (float)getCairanTotal();  // Get actual UI value
+  ESP_LOGI(TAG_SENSOR, "Step tracking initialized - Initial step count: %d, Initial cairan total from UI: %.2f", 
+           lastStepCount, cairanTubuhTotalFloat);
+  
   bool stepDetected = false;
+  bool isfirstCairan = true;
+  String hasil = "";
 
   while (true) {
     // lvgl_handler();
@@ -568,11 +620,19 @@ void applySensor(void *param){
     
     playTestAudio = playAudio();
     saveAlarm  = getSaveAlarm();
-    hiddenAlarm = gethidenAlaram();
+    hiddenAlarm[0] = gethidenAlaram();
+    hiddenAlarm[1] = getHiddenAlarm2();
+    hiddenAlarm[2] = getHiddenAlarm3();
     setAlarm = getSetAlarm();
     indexAlarm = getIndexAlarm();
     cairanTubuh = getCairan();
+    if (getCairanTotal() > 10000 && isfirstCairan == true)
+    {
+      firstcairanTotal = getCairanTotal();
+      isfirstCairan = false;
+    }
     cairanTubuhTotal = getCairanTotal();
+    // USBSerial.printf("Cairan tubuh total (%d) is less than first cairan total (%d)\n", cairanTubuhTotal, firstcairanTotal);
     const char *nama = getNama();
     int32_t bb = getBB();
     const char *startTime = getStartTime();
@@ -588,6 +648,18 @@ void applySensor(void *param){
     static const char* fileNamePtrs[10];
     static int fileCount = 0;
     static const unsigned long JSON_UPDATE_INTERVAL = 5000; // Update every 5 seconds instead of 1
+
+    if (getSaveWifiSTA())
+    {
+      STORAGE.saveWifiSTA(getSsidSTA(), getPassSTA());
+      setSavewifiSTA(false);
+    }
+    
+    if (getSaveWifiAP())
+    {
+      STORAGE.saveWifi(getSsidAP(), getPassAP());
+      setSavewifiAP(false);
+    }
     
     if (millis() - lastJsonUpdate > JSON_UPDATE_INTERVAL) {
       jsonData = memory->listDirJson("/");
@@ -657,7 +729,6 @@ void applySensor(void *param){
     setStep(stepCounter->getStepCount());
 
     if (getCalculate() == true && bb > 0) {
-      int hidrasi = 0;
       
       if (bb < 10) {
         hidrasi = bb * 100;
@@ -666,10 +737,47 @@ void applySensor(void *param){
       } else {
         hidrasi = 1500 + ((bb - 20) * 20);
       }
+
+      cairanKeluarFisik = (float)hidrasi * 0.4f;
       
-      String hasil = String("         ") + String(nama) + ", \nkebutuhan cairanmu \n   " + String(hidrasi) + " ml / hari";
+      hasil = String("         ") + String(nama) + ", \nkebutuhan cairanmu \n   " + String(hidrasi) + " ml / hari";
       sethasilHitung(hasil.c_str());
+      setCalculate(false);
     }
+
+        // Handle cairan reduction based on step count (0.28ml per step)
+    int currentStepCount = stepCounter->getStepCount();
+    if (currentStepCount != lastStepCount && (currentStepCount - lastStepCount ) == 4) {
+        int stepDifference = currentStepCount - lastStepCount;
+        
+        // Only process positive step increments to avoid negative calculations
+        if (stepDifference > 0) {
+            // Get current UI value and store it for logging
+            int previousTotal = getCairanTotal();
+            cairanTubuhTotalFloat = (float)previousTotal;
+            
+            // Reduce total cairan by 0.28ml per step
+            float cairanReduction = stepDifference * 0.25; 
+            currentCairanKeluar += cairanReduction;
+            cairanTubuhTotalFloat -= cairanReduction;
+            
+            // Ensure cairan doesn't go below 0
+            if (cairanTubuhTotalFloat < 0.0) {
+                cairanTubuhTotalFloat = 0.0;
+            }
+
+            
+            // Convert to int and update UI
+            int newCairanTotal = (int)cairanTubuhTotalFloat;
+            setCairanTotal(newCairanTotal);
+            
+            ESP_LOGI(TAG_SENSOR, "Step count changed: %d -> %d (diff: +%d), Previous total: %d, Cairan reduced by %.2fml, New total: %d", 
+                     lastStepCount, currentStepCount, stepDifference, previousTotal, cairanReduction, newCairanTotal);
+        }
+        
+        lastStepCount = currentStepCount;
+    }
+
 
     if (saveAlarm && indexAlarm >= 1 && indexAlarm <= 3) {
       // Get appropriate time variables based on alarm index
@@ -690,50 +798,56 @@ void applySensor(void *param){
         saveAlarm = false;
         setSaveAlarm(saveAlarm);
       }
-    } else {
-      // Check if any alarm should be active using helper function
-      bool anyAlarmShouldBeActive = isAnyAlarmActive();
-      
-      if (anyAlarmShouldBeActive) {
-        // setCairan(0);
-        // Find which alarm is active and update corresponding state
-        for (int i = 0; i < 3; i++) {
-          bool shouldBeActive = false;
+    } 
+    if (!saveAlarm) {
+      // Check alarm status dengan thread safety
+      if (alarm_mutex != NULL && xSemaphoreTake(alarm_mutex, pdMS_TO_TICKS(10)) == pdTRUE) {
+        
+        // Check active alarm menggunakan fungsi baru
+        int activeAlarmIndex = checkActiveAlarm();
+        
+        // Jika ada alarm aktif dan belum triggered
+        if (activeAlarmIndex >= 0 && !lastAlarmActiveState && !isClosePopup) {
           
-          // Check schedule for each alarm
-          if (i == 0) {
-            shouldBeActive = isWithinSchedule(STORAGE.getStartTime(), STORAGE.getEndTime()) && isAlarm[i];
-          }
-          else if (i == 1){
-            shouldBeActive = isWithinSchedule(STORAGE.getStartTime2(), STORAGE.getEndTime2()) && isAlarm[i];
-          }
-          else if (i == 2){
-            shouldBeActive = isWithinSchedule(STORAGE.getStartTime3(), STORAGE.getEndTime3()) && isAlarm[i];
-          } 
+          // Set index aktif
+          indexActive = activeAlarmIndex;
           
-          // Deteksi perubahan state dan buka screen data cairan masuk
-          if (shouldBeActive && !isClosePopup && !lastAlarmActiveState[i]) {
-            ESP_LOGI(TAG_SENSOR, "Alarm %d activated - Opening data cairan masuk screen", i+1);
-            
-            // Simpan screen sebelumnya hanya jika belum disimpan
-            if (previousScreen == NULL) {
-              previousScreen = lv_scr_act();
-            }
-            
-            lv_textarea_set_text(objects.jumlah_cairan, "0");
-            // lv_label_set_text(objects.jumlah_cairan, "0");
-            // Switch ke screen data cairan masuk dengan animasi
-            lv_scr_load_anim(objects.data_cairan_masuk, LV_SCR_LOAD_ANIM_FADE_ON, 200, 0, false);
-            lastAlarmActiveState[i] = true;
+          // Simpan screen sebelumnya
+          if (previousScreen == NULL) {
+            previousScreen = lv_scr_act();
           }
           
-          isAlarmActive[i] = shouldBeActive;
+          // Log aktivasi alarm
+          if (indexActive < 3) {
+            ESP_LOGI(TAG_SENSOR, "Alarm %d activated - Opening data cairan masuk screen", indexActive+1);
+          } else {
+            ESP_LOGI(TAG_SENSOR, "Cairan fisik alarm activated - Opening data cairan masuk screen");
+          }
+          
+          // Reset input field
+          lv_textarea_set_text(objects.jumlah_cairan, "0");
+          
+          // Switch ke screen data cairan masuk dengan animasi
+          lv_scr_load_anim(objects.data_cairan_masuk, LV_SCR_LOAD_ANIM_FADE_ON, 200, 0, false);
+          
+          // Set flags untuk trigger audio dan mencegah re-trigger
+          lastAlarmActiveState = true;
+          alarmTriggered = true;
+          isAlarmActive = true;
+          
+          ESP_LOGI(TAG_SENSOR, "Alarm state updated - alarmTriggered: true, isAlarmActive: true");
+        } 
+        // Jika tidak ada alarm aktif, reset state
+        else if (activeAlarmIndex < 0 && lastAlarmActiveState) {
+          // Alarm selesai secara natural (keluar dari schedule)
+          ESP_LOGI(TAG_SENSOR, "Alarm deactivated naturally");
+          lastAlarmActiveState = false;
+          alarmTriggered = false;
+          isAlarmActive = false;
+          indexActive = -1;
         }
-      } else {
-        // Reset all alarm active states
-        for (int i = 0; i < 3; i++) {
-          isAlarmActive[i] = false;
-        }
+        
+        xSemaphoreGive(alarm_mutex);
       }
     }
 
@@ -748,10 +862,7 @@ void applySensor(void *param){
 
       if (ntpCurrentDay != ntpLastDay) {
         setCurrentDate((CURRENT_DATE).c_str());
-        if (!saveAlarm && !hiddenAlarm)
-        {
-          setPlayAlarm(true);
-        }
+        setCairanTotal(firstcairanTotal);
         ntpLastDay = ntpCurrentDay;
       }
     } else {
@@ -792,10 +903,7 @@ void applySensor(void *param){
                 weekdays[currentDay], dt.day, dt.month, dt.year);
     if (currentDay != lastDay) {
       setCurrentDate(rtcDateStr);
-      if (!saveAlarm && !hiddenAlarm)
-      {
-        setPlayAlarm(true);
-      }
+      setCairanTotal(firstcairanTotal);
       lastDay = currentDay;
     }
   }
@@ -828,17 +936,37 @@ void controlAlarmTask(void *param) {
         }
 
         // Check if any alarm is active and start audio playback
-        bool anyAlarmActive = false;
-        for (int i = 0; i < 3; i++) {
-            if (isAlarmActive[i]) {
-                anyAlarmActive = true;
-                isAlarmActive[i] = false; // Reset after processing
+        bool shouldTriggerAudio = false;
+        bool isAlarmStillActive = false;
+        
+        // Thread-safe check untuk alarm trigger
+        if (alarm_mutex != NULL && xSemaphoreTake(alarm_mutex, pdMS_TO_TICKS(10)) == pdTRUE) {
+            // Check jika alarm masih aktif (untuk looping audio)
+            if (isAlarmActive) {
+                shouldTriggerAudio = true;
+                isAlarmStillActive = true;
+                
+                // Log hanya saat pertama kali triggered
+                if (alarmTriggered) {
+                    ESP_LOGI(TAG, "Audio triggered for alarm index: %d", indexActive);
+                    alarmTriggered = false;  // Reset flag log agar tidak spam
+                }
             }
+            xSemaphoreGive(alarm_mutex);
         }
         
-        if (anyAlarmActive && !isPlaying) {
-            alarmUntil = millis() + 6000UL;
-            tempAlarmFlag = true;  // Temporary flag for audio system compatibility - true to allow playback
+        // Trigger audio baru jika alarm aktif dan tidak sedang playing
+        if (shouldTriggerAudio && !isPlaying) {
+            alarmUntil = millis() + 6000UL;  // 6 detik durasi audio
+            tempAlarmFlag = true;
+            ESP_LOGD(TAG, "Starting alarm audio playback (loop)");
+        }
+        
+        // Auto-reset alarmUntil jika alarm sudah tidak aktif
+        if (!isAlarmStillActive && alarmUntil > 0) {
+            alarmUntil = 0;
+            tempAlarmFlag = false;
+            ESP_LOGI(TAG, "Alarm deactivated - stopping audio");
         }
 
         bool shouldBePlaying = (long)(millis() - alarmUntil) < 0;

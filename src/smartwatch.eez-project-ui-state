@@ -1,11 +1,11 @@
 {
   "navigation": {
-    "selectedUserPageObject": "[smartwatch.eez-project]:/userPages/8",
-    "selectedGlobalVariableObject": "[smartwatch.eez-project]:/variables/globalVariables/11",
+    "selectedUserPageObject": "[smartwatch.eez-project]:/userPages/0",
+    "selectedGlobalVariableObject": "[smartwatch.eez-project]:/variables/globalVariables/42",
     "selectedFontObject": "[smartwatch.eez-project]:/fonts/8",
     "selectedBitmapObject": "[smartwatch.eez-project]:/bitmaps/19",
     "subnavigationSelectedItems": {
-      "variables-tab/sub-navigation/selected-item": "Actions"
+      "variables-tab/sub-navigation/selected-item": "Global"
     }
   },
   "layoutModel": {
@@ -66,7 +66,7 @@
           },
           {
             "type": "border",
-            "selected": 0,
+            "selected": 3,
             "size": 180.5,
             "location": "bottom",
             "children": [
@@ -186,17 +186,40 @@
               "type": "tabset",
               "id": "EDITORS",
               "weight": 54.33184855233853,
+              "selected": 4,
               "enableDeleteWhenEmpty": false,
               "enableClose": false,
               "children": [
                 {
                   "type": "tab",
-                  "id": "#e3d0f9ee-86bd-4a08-aafe-0ae6a9d12502",
-                  "name": "alarm",
+                  "id": "#22cfb585-afb3-4ef4-88e9-73f0302da4cd",
+                  "name": "data_cairan_masuk",
                   "component": "editor",
                   "config": {
-                    "objectPath": "[smartwatch.eez-project]:/userPages/8",
+                    "objectPath": "[smartwatch.eez-project]:/userPages/10",
                     "permanent": false
+                  },
+                  "icon": "svg:page"
+                },
+                {
+                  "type": "tab",
+                  "id": "#22143082-68e7-4913-a8f4-87c419354351",
+                  "name": "setSTA",
+                  "component": "editor",
+                  "config": {
+                    "objectPath": "[smartwatch.eez-project]:/userPages/11",
+                    "permanent": true
+                  },
+                  "icon": "svg:page"
+                },
+                {
+                  "type": "tab",
+                  "id": "#e3d0f9ee-86bd-4a08-aafe-0ae6a9d12502",
+                  "name": "setting",
+                  "component": "editor",
+                  "config": {
+                    "objectPath": "[smartwatch.eez-project]:/userPages/2",
+                    "permanent": true
                   },
                   "icon": "svg:page"
                 },
@@ -956,21 +979,24 @@
     "[smartwatch.eez-project]:/userPages/0[flow-state]": {
       "selection": {
         "0": {
-          "4": {},
-          "5": {
-            "0": {
-              "1": {}
+          "3": {
+            "3": {
+              "0": {
+                "$selected": true
+              }
             }
-          }
+          },
+          "4": {},
+          "7": {}
         },
         "2": {}
       },
       "transform": {
         "translate": {
-          "x": -241.66666666666663,
-          "y": -180.08333333333326
+          "x": -284.0690476190475,
+          "y": -252.1309523809523
         },
-        "scale": 1
+        "scale": 1.1
       },
       "timeline": {
         "isEditorActive": false,
@@ -1049,23 +1075,22 @@
     "[smartwatch.eez-project]:/userPages/2[flow-state]": {
       "selection": {
         "0": {
+          "2": {},
           "3": {
             "2": {}
           }
         },
         "3": {},
         "6": {},
-        "7": {
-          "$selected": true
-        },
+        "7": {},
         "8": {}
       },
       "transform": {
         "translate": {
-          "x": -481.30604983739306,
-          "y": -201.35893153281222
+          "x": -239.23726303547198,
+          "y": -205.69232409381672
         },
-        "scale": 1
+        "scale": 0.9
       },
       "timeline": {
         "isEditorActive": false,
@@ -1200,8 +1225,8 @@
       },
       "transform": {
         "translate": {
-          "x": -359.23943068747144,
-          "y": -290.90770578923565
+          "x": -235.23943068747144,
+          "y": -251.90770578923565
         },
         "scale": 0.75
       },
@@ -1262,14 +1287,18 @@
     },
     "[smartwatch.eez-project]:/userPages/11[flow-state]": {
       "selection": {
-        "0": {}
+        "0": {
+          "1": {},
+          "3": {},
+          "4": {}
+        }
       },
       "transform": {
         "translate": {
-          "x": -430,
-          "y": -209
+          "x": -237.38476190476175,
+          "y": -320.28976190476214
         },
-        "scale": 1
+        "scale": 1.1
       },
       "timeline": {
         "isEditorActive": false,
@@ -1281,15 +1310,18 @@
     "[smartwatch.eez-project]:/userPages/12[flow-state]": {
       "selection": {
         "0": {
+          "1": {
+            "$selected": true
+          },
           "3": {}
         }
       },
       "transform": {
         "translate": {
-          "x": -299.69999999999993,
-          "y": -158.39999999999986
+          "x": -150.45999999999984,
+          "y": -215.6849999999999
         },
-        "scale": 1
+        "scale": 1.1
       },
       "timeline": {
         "isEditorActive": false,
@@ -1391,8 +1423,7 @@
     "ARC",
     "LINE",
     "IMAGE",
-    "BORDER",
-    "BACKGROUND"
+    "BORDER"
   ],
   "showInactiveFlowsInDebugger": true
 }

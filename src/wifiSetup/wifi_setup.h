@@ -4,9 +4,6 @@
 class WifiSetup {
    private:
     DNSServer dnsServer;
-
-    const char *ssid1 = "KiBo Alarm";
-    const char *password1 = "kibolab123";
     bool mode = false;
     String macAddress = WiFi.macAddress();
 
@@ -14,9 +11,9 @@ class WifiSetup {
     // void begin();
     WifiSetup();
     // void begin();
-    void setupWiFiAP();
+    void setupWiFiAP(const char *ssid, const char *password);
     void loopDns();
-    void setupWiFiSTA(const String& ssid, const String& pass);
+    void setupWiFiSTA(const char *ssid, const char *pass);
     void connectAP();
     void connectSTA();
     // String getMac() { return macAddress; }

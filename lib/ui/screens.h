@@ -19,6 +19,8 @@ typedef struct _objects_t {
     lv_obj_t *alarm;
     lv_obj_t *setting_alarm;
     lv_obj_t *data_cairan_masuk;
+    lv_obj_t *set_sta;
+    lv_obj_t *set_ap;
     lv_obj_t *button_alarm_1;
     lv_obj_t *button_audio_1;
     lv_obj_t *button_date_time;
@@ -28,6 +30,7 @@ typedef struct _objects_t {
     lv_obj_t *buttonsavetime;
     lv_obj_t *hourroller;
     lv_obj_t *humidity_panel;
+    lv_obj_t *input_total_boddy_water;
     lv_obj_t *inputama_1;
     lv_obj_t *inputbb_1;
     lv_obj_t *inputday;
@@ -37,6 +40,10 @@ typedef struct _objects_t {
     lv_obj_t *keyboard_bb_1;
     lv_obj_t *keyboard_day;
     lv_obj_t *keyboard_nams_1;
+    lv_obj_t *keyboard_pass;
+    lv_obj_t *keyboard_pass_1;
+    lv_obj_t *keyboard_ssid;
+    lv_obj_t *keyboard_ssid_1;
     lv_obj_t *keyboard_usia_1;
     lv_obj_t *keyboard_year;
     lv_obj_t *minuteroller;
@@ -107,14 +114,32 @@ typedef struct _objects_t {
     lv_obj_t *obj65;
     lv_obj_t *obj66;
     lv_obj_t *obj67;
+    lv_obj_t *obj68;
+    lv_obj_t *obj69;
     lv_obj_t *obj7;
+    lv_obj_t *obj70;
+    lv_obj_t *obj71;
+    lv_obj_t *obj72;
+    lv_obj_t *obj73;
+    lv_obj_t *obj74;
+    lv_obj_t *obj75;
+    lv_obj_t *obj76;
+    lv_obj_t *obj77;
+    lv_obj_t *obj78;
+    lv_obj_t *obj79;
     lv_obj_t *obj8;
+    lv_obj_t *obj80;
+    lv_obj_t *obj81;
     lv_obj_t *obj9;
     lv_obj_t *panel1;
     lv_obj_t *panel2;
     lv_obj_t *panel3;
+    lv_obj_t *pass;
+    lv_obj_t *pass_1;
     lv_obj_t *rolleralarmhours;
     lv_obj_t *rolleralarmminutes;
+    lv_obj_t *ssid;
+    lv_obj_t *ssid_1;
     lv_obj_t *total_cairan;
 } objects_t;
 
@@ -132,6 +157,8 @@ enum ScreensEnum {
     SCREEN_ID_ALARM = 9,
     SCREEN_ID_SETTING_ALARM = 10,
     SCREEN_ID_DATA_CAIRAN_MASUK = 11,
+    SCREEN_ID_SET_STA = 12,
+    SCREEN_ID_SET_AP = 13,
 };
 
 void create_screen_main();
@@ -166,6 +193,12 @@ void tick_screen_setting_alarm();
 
 void create_screen_data_cairan_masuk();
 void tick_screen_data_cairan_masuk();
+
+void create_screen_set_sta();
+void tick_screen_set_sta();
+
+void create_screen_set_ap();
+void tick_screen_set_ap();
 
 void create_screens();
 void tick_screen(int screen_index);

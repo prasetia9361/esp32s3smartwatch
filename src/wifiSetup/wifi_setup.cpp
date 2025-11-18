@@ -2,18 +2,18 @@
 
 WifiSetup::WifiSetup() {}
 
-void WifiSetup::setupWiFiAP() {
+void WifiSetup::setupWiFiAP(const char *ssid, const char *password) {
     IPAddress apIP(192, 168, 7, 2);
     IPAddress subNet(255, 255, 255, 0);
     WiFi.softAPConfig(apIP, apIP, subNet);
-    WiFi.softAP(ssid1, password1, 6, 0, 4);
+    WiFi.softAP(ssid, password, 6, 0, 4);
     
     dnsServer.setTTL(3600);
     dnsServer.start(53, "*", apIP);
 }
 
-void WifiSetup::setupWiFiSTA(const String& ssid, const String& pass){
-    WiFi.begin(ssid.c_str(), pass.c_str());
+void WifiSetup::setupWiFiSTA(const char* ssid, const char* pass){
+    WiFi.begin(ssid, pass);
 
     int retry = 20; // 10 detik timeout
     while (WiFi.status() != WL_CONNECTED && retry > 0) {
